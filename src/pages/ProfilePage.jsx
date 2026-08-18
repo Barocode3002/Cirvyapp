@@ -1,14 +1,17 @@
 // src/pages/ProfilePage.jsx
+// Profile view matching the HTML layout and Supabase backend.
+
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import FriendButton from '../components/FriendButton'
 import NavBar from '../components/NavBar'
-import PostCard from '../components/PostCard'
-import { Loader2, Lock, ShieldCheck, Users, FileText, Sparkles } from 'lucide-react'
+import { useUI } from '@/contexts/UIContext'
 
 export default function ProfilePage() {
   const { userId } = useParams()
+  const { t, showToast, ghostMode, setShowSettings } = useUI()
+
   const [profile, setProfile] = useState(null)
   const [isFriend, setIsFriend] = useState(false)
   const [currentUserId, setCurrentUserId] = useState(null)
@@ -17,27 +20,40 @@ export default function ProfilePage() {
   const [postCount, setPostCount] = useState(0)
   const [posts, setPosts] = useState([])
 
+  // Edit Bio modal state
+  const [showEditBio, setShowEditBio] = useState(false)
+  const [bioInput, setBioInput] = useState('')
+  const [savingBio, setSavingBio] = useState(false)
+
   useEffect(() => {
     loadProfile()
-    
+
     async function loadProfile() {
       setLoading(true)
 
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) return
       setCurrentUserId(user.id)
 
-      const { data: friendship } = await supabase
-        .from('friendships')
-        .select('status')
-        .or(`and(requester_id.eq.${user.id},addressee_id.eq.${userId}),and(requester_id.eq.${userId},addressee_id.eq.${user.id})`)
-        .eq('status', 'accepted')
-        .maybeSingle()
+      const friends = user.id === userId
 
-      const friends = !!friendship || user.id === userId
-      setIsFriend(friends)
+      let isFr = friends
+      if (!friends) {
+        const { data: friendship } = await supabase
+          .from('friendships')
+          .select('status')
+          .or(
+            `and(requester_id.eq.${user.id},addressee_id.eq.${userId}),and(requester_id.eq.${userId},addressee_id.eq.${user.id})`
+          )
+          .eq('status', 'accepted')
+          .maybeSingle()
+        isFr = !!friendship
+      }
+      setIsFriend(isFr)
 
-      const columns = friends
+      const columns = isFr
         ? 'id, username, display_name, avatar_url, bio, created_at'
         : 'id, username, display_name, avatar_url'
 
@@ -48,6 +64,7 @@ export default function ProfilePage() {
         .single()
 
       setProfile(data)
+      if (data?.bio) setBioInput(data.bio)
 
       const { count: fCount } = await supabase
         .from('friendships')
@@ -62,13 +79,15 @@ export default function ProfilePage() {
         .eq('author_id', userId)
       setPostCount(pCount || 0)
 
-      if (friends) {
+      if (isFr) {
         const { data: userPosts } = await supabase
           .from('posts')
-          .select('id, content, image_url, author_id, created_at, author:author_id(id, username, display_name, avatar_url)')
+          .select(
+            'id, content, image_url, author_id, created_at, author:author_id(id, username, display_name, avatar_url)'
+          )
           .eq('author_id', userId)
           .order('created_at', { ascending: false })
-          .limit(20)
+          .limit(30)
         setPosts(userPosts || [])
       }
 
@@ -76,19 +95,30 @@ export default function ProfilePage() {
     }
   }, [userId])
 
-  const getInitials = (name) => {
-    if (!name) return 'U'
-    const parts = name.trim().split(' ')
-    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-    return name.slice(0, 2).toUpperCase()
+  async function handleSaveBio(e) {
+    e.preventDefault()
+    setSavingBio(true)
+    await supabase
+      .from('profiles')
+      .update({ bio: bioInput.trim() })
+      .eq('id', currentUserId)
+    setProfile((prev) => ({ ...prev, bio: bioInput.trim() }))
+    setSavingBio(false)
+    setShowEditBio(false)
+    showToast('Profile updated')
+  }
+
+  function formatCount(n) {
+    if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'K'
+    return n
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen ambient-bg flex flex-col">
+      <div className="min-h-screen flex flex-col max-w-md md:max-w-2xl mx-auto relative">
         <NavBar />
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
+          <i className="fa-solid fa-circle-notch fa-spin text-2xl accent-text" />
         </div>
       </div>
     )
@@ -96,17 +126,13 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen ambient-bg flex flex-col">
+      <div className="min-h-screen flex flex-col max-w-md md:max-w-2xl mx-auto relative">
         <NavBar />
         <div className="flex-1 flex items-center justify-center px-4">
-          <div className="glass-card rounded-3xl p-8 text-center max-w-sm w-full animate-fade-in-up">
-            <p className="text-4xl mb-3">🔍</p>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
-              Profile not found
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              The user you are looking for does not exist or has been removed.
-            </p>
+          <div className="glass rounded-3xl p-8 text-center max-w-xs w-full">
+            <p className="text-3xl mb-2">🔍</p>
+            <h3 className="font-display font-bold text-base mb-1">Profile not found</h3>
+            <p className="text-xs text-sub">This user profile does not exist.</p>
           </div>
         </div>
       </div>
@@ -116,151 +142,193 @@ export default function ProfilePage() {
   const isOwnProfile = currentUserId === userId
 
   return (
-    <div className="min-h-screen ambient-bg flex flex-col">
+    <div className="min-h-screen flex flex-col max-w-md md:max-w-2xl mx-auto relative">
       <NavBar />
 
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 pt-20 pb-28 md:pt-24 md:pb-16">
-        {/* Profile Card */}
-        <div className="glass-card rounded-3xl overflow-hidden shadow-md animate-fade-in-up">
-          {/* Header Banner */}
-          <div className="h-36 relative bg-gradient-to-r from-teal-600 via-cyan-600 to-indigo-600 overflow-hidden">
-            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
-            <div className="absolute top-3 right-4 px-3 py-1 rounded-full bg-black/25 backdrop-blur-md border border-white/10 text-[11px] font-semibold text-white flex items-center gap-1.5 shadow-sm">
-              <Sparkles className="w-3 h-3 text-cyan-300" />
-              <span>Cirvy Circle</span>
-            </div>
+      <main className="flex-1 overflow-y-auto pb-28 px-4 pt-4 view">
+        {/* Top action buttons */}
+        <div className="flex justify-end gap-2 mb-2">
+          {isOwnProfile && (
+            <>
+              <button
+                onClick={() => setShowSettings(true)}
+                className="w-9 h-9 rounded-full field flex items-center justify-center scale-tap transition cursor-pointer"
+                title="Settings"
+              >
+                <i className="fa-solid fa-gear text-sm" />
+              </button>
+              <button
+                onClick={() => setShowEditBio(true)}
+                className="w-9 h-9 rounded-full field flex items-center justify-center scale-tap transition cursor-pointer"
+                title="Edit Profile"
+              >
+                <i className="fa-solid fa-pen text-sm" />
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Profile Card / Header */}
+        <div className="flex flex-col items-center text-center">
+          <div className="relative">
+            <img
+              src={
+                profile.avatar_url ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  profile.display_name || 'U'
+                )}&background=217a67&color=fff&size=150`
+              }
+              alt=""
+              className="w-24 h-24 rounded-full object-cover ring-4"
+              style={{ ringColor: 'var(--accent-soft)' }}
+            />
+            <span
+              className="absolute bottom-1 right-1 w-4 h-4 rounded-full ring-2"
+              style={{
+                background: ghostMode ? '#34d399' : '#9aa2ad',
+                ringColor: 'var(--bg)',
+              }}
+            />
           </div>
 
-          {/* Profile Details Container */}
-          <div className="px-6 pb-6 -mt-14 relative">
-            <div className="flex items-end justify-between gap-4 mb-4">
-              <div className="relative group">
-                {profile.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={profile.display_name}
-                    className="w-24 h-24 rounded-3xl object-cover ring-4 ring-white dark:ring-slate-900 shadow-xl"
-                  />
-                ) : (
-                  <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-teal-500 via-cyan-500 to-indigo-500 text-white font-extrabold flex items-center justify-center text-2xl shadow-xl ring-4 ring-white dark:ring-slate-900">
-                    {getInitials(profile.display_name)}
-                  </div>
-                )}
-                {isOwnProfile && (
-                  <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 shadow-sm" />
-                )}
-              </div>
+          <h3 className="font-display font-bold text-lg mt-3 text-main">
+            {profile.display_name}
+          </h3>
+          <p className="text-sub text-sm">@{profile.username}</p>
 
-              {/* Friend action button */}
-              <div className="mb-1">
-                <FriendButton profileId={userId} currentUserId={currentUserId} />
-              </div>
-            </div>
+          {/* Badges */}
+          <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
+            <span className="text-[11px] font-mono px-2.5 py-1 rounded-full accent-soft-bg accent-text flex items-center gap-1 font-medium">
+              <i className="fa-solid fa-lock text-[9px]" />
+              <span>{t('privateProfile')}</span>
+            </span>
 
-            {/* Name & Handle */}
-            <div className="mb-4">
-              <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                {profile.display_name}
-              </h2>
-              <p className="text-sm font-semibold text-teal-600 dark:text-teal-400">
-                @{profile.username}
-              </p>
-            </div>
-
-            {/* Badges */}
-            <div className="flex flex-wrap gap-2 mb-5">
-              {!isFriend && !isOwnProfile && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  <Lock className="h-3.5 w-3.5" />
-                  Private Account
-                </span>
-              )}
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Zero Ads Shield
+            {ghostMode && (
+              <span className="text-[11px] font-mono px-2.5 py-1 rounded-full field flex items-center gap-1 text-sub font-medium">
+                <i className="fa-solid fa-ghost text-[9px]" />
+                <span>{t('ghostActive')}</span>
               </span>
+            )}
+          </div>
+
+          {/* Bio */}
+          <p className="text-sm text-sub mt-3 max-w-xs leading-relaxed">
+            {isFriend || isOwnProfile
+              ? profile.bio || 'Actor · storyteller · here for the people who already know me. Fan requests reviewed manually 🤍'
+              : 'Bio is hidden. Connect to view full profile.'}
+          </p>
+
+          {/* Friend action button if not own profile */}
+          {!isOwnProfile && (
+            <div className="mt-3">
+              <FriendButton profileId={userId} currentUserId={currentUserId} />
             </div>
+          )}
 
-            {/* Stats Bar */}
-            <div className="grid grid-cols-2 gap-3 py-3.5 px-4 rounded-2xl bg-slate-100/70 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/5 mb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center text-teal-500">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-base font-bold text-slate-900 dark:text-white">{friendCount}</p>
-                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Close Friends</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 border-l border-slate-200 dark:border-white/5 pl-3">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-500">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-base font-bold text-slate-900 dark:text-white">{postCount}</p>
-                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Total Posts</p>
-                </div>
-              </div>
+          {/* Stats Bar */}
+          <div className="flex gap-8 mt-4 text-sm">
+            <div>
+              <p className="font-bold text-main">{formatCount(postCount)}</p>
+              <p className="text-sub text-xs">{t('postsLabel')}</p>
             </div>
-
-            {/* Bio Section */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                About
-              </h4>
-              {isFriend ? (
-                <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
-                  {profile.bio || 'No bio shared yet.'}
-                </p>
-              ) : (
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                  <Lock className="h-4 w-4 text-amber-500 shrink-0" />
-                  <span>Bio is hidden. Connect to view full profile.</span>
-                </p>
-              )}
+            <div>
+              <p className="font-bold text-main">{formatCount(friendCount)}</p>
+              <p className="text-sub text-xs">{t('friendsLabel')}</p>
+            </div>
+            <div>
+              <p className="font-bold text-main">98%</p>
+              <p className="text-sub text-xs">{t('trustLabel')}</p>
             </div>
           </div>
         </div>
 
-        {/* User's Posts Feed */}
+        {/* Profile Posts Grid */}
         {isFriend && (
-          <div className="mt-8 space-y-4">
-            <div className="flex items-center justify-between px-1">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                Posts ({posts.length})
-              </h3>
-            </div>
-
+          <div className="grid grid-cols-3 gap-1.5 mt-6">
             {posts.length === 0 ? (
-              <div className="glass-card rounded-2xl p-8 text-center">
-                <p className="text-xs font-medium text-slate-400">
-                  No posts published yet by this user.
-                </p>
+              <div className="col-span-3 text-center text-sub text-xs py-8">
+                No posts shared yet.
               </div>
             ) : (
-              <div className="space-y-4 stagger-children">
-                {posts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    currentUserId={currentUserId}
-                    onPostUpdated={() => {
-                      supabase
-                        .from('posts')
-                        .select('id, content, image_url, author_id, created_at, author:author_id(id, username, display_name, avatar_url)')
-                        .eq('author_id', userId)
-                        .order('created_at', { ascending: false })
-                        .limit(20)
-                        .then(({ data }) => setPosts(data || []))
-                    }}
-                  />
-                ))}
-              </div>
+              posts.map((p) => (
+                <div
+                  key={p.id}
+                  className="relative rounded-lg overflow-hidden aspect-square group bg-[var(--bg-alt)] border border-[var(--card-border)]"
+                >
+                  {p.image_url ? (
+                    <img
+                      src={p.image_url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full p-2 flex items-center justify-center text-[11px] text-sub text-center leading-tight bg-[var(--card-bg)]">
+                      {p.content}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <span className="text-white text-xs font-semibold">
+                      <i className="fa-solid fa-heart mr-1" />
+                    </span>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         )}
       </main>
+
+      {/* ============ MODAL: EDIT BIO ============ */}
+      {showEditBio && (
+        <div className="fixed inset-0 z-[90] flex items-end md:items-center justify-center">
+          <div
+            className="modal-backdrop absolute inset-0 bg-black/50"
+            onClick={() => setShowEditBio(false)}
+          />
+          <div className="modal-panel relative glass w-full md:w-96 rounded-t-3xl md:rounded-3xl p-5 z-10">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display font-bold text-lg">Edit Profile Bio</h3>
+              <button
+                onClick={() => setShowEditBio(false)}
+                className="w-8 h-8 rounded-full field flex items-center justify-center scale-tap"
+              >
+                <i className="fa-solid fa-xmark text-xs" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBio} className="space-y-3">
+              <div>
+                <textarea
+                  value={bioInput}
+                  onChange={(e) => setBioInput(e.target.value)}
+                  rows={3}
+                  placeholder="Share a short bio with your circle..."
+                  className="field w-full rounded-xl p-3 text-sm resize-none"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex gap-2 justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowEditBio(false)}
+                  className="field px-4 py-2 rounded-xl text-xs font-semibold scale-tap"
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingBio}
+                  className="accent-bg text-white px-5 py-2 rounded-xl text-xs font-semibold scale-tap disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                >
+                  {savingBio && <i className="fa-solid fa-circle-notch fa-spin mr-1" />}
+                  <span>{t('save')}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

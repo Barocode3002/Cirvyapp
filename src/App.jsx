@@ -6,6 +6,8 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 import ProfilePage from '@/pages/ProfilePage'
 import FriendRequestsPage from '@/pages/FriendRequestsPage'
 
+import SearchPage from '@/pages/SearchPage'
+
 // --------------------------------------------------------------------------
 // App — the router shell.
 //
@@ -14,6 +16,7 @@ import FriendRequestsPage from '@/pages/FriendRequestsPage'
 //  /login    → public  → sign in
 //  /feed     → private → friends-only feed (wrapped in ProtectedRoute)
 //  /friends  → private → friend requests & friends list (wrapped in ProtectedRoute)
+//  /search   → private → zero-tracking user search (wrapped in ProtectedRoute)
 //  /profile/:userId → private → profile page (wrapped in ProtectedRoute)
 //  /         → redirect to /feed (which bounces to /login if not authed)
 //
@@ -39,6 +42,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <FriendRequestsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/search"
+          element={
+            <ProtectedRoute>
+              <SearchPage />
             </ProtectedRoute>
           }
         />

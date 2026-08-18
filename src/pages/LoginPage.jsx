@@ -1,22 +1,15 @@
+// src/pages/LoginPage.jsx
+// Sign In page matching the HTML design, fully wired to Supabase auth.
+
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useUI } from '@/contexts/UIContext'
 import { supabase } from '@/lib/supabase'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Loader2, X, Mail, Sparkles, Lock, ArrowRight } from 'lucide-react'
 
 export default function LoginPage() {
   const { signIn } = useAuth()
+  const { t, showToast, lang, toggleLang, dark, toggleTheme } = useUI()
   const navigate = useNavigate()
 
   const [email, setEmail] = useState('')
@@ -24,12 +17,10 @@ export default function LoginPage() {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  // Forgot Password modal state
+  // Forgot Password modal
   const [showForgot, setShowForgot] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
-  const [forgotSent, setForgotSent] = useState(false)
-  const [forgotError, setForgotError] = useState(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -44,193 +35,234 @@ export default function LoginPage() {
       return
     }
 
+    showToast(t('loginSuccess'))
     navigate('/feed')
   }
 
-  const handleForgotPassword = async (e) => {
+  const handleResetPassword = async (e) => {
     e.preventDefault()
-    setForgotError(null)
+    if (!forgotEmail) return
     setForgotLoading(true)
 
     const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
       redirectTo: `${window.location.origin}/login`,
     })
 
-    if (error) {
-      setForgotError(error.message)
-      setForgotLoading(false)
-      return
-    }
-
-    setForgotSent(true)
     setForgotLoading(false)
+    setShowForgot(false)
+    if (error) {
+      showToast(error.message)
+    } else {
+      showToast(t('resetSent'))
+    }
+  }
+
+  const handleOAuth = async (provider) => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/feed`,
+      },
+    })
+    if (error) showToast(error.message)
   }
 
   return (
-    <div className="ambient-bg flex min-h-svh items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md animate-fade-in-up">
-        {/* Brand Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex w-14 h-14 rounded-3xl bg-gradient-to-tr from-teal-500 via-cyan-500 to-indigo-500 items-center justify-center shadow-xl shadow-teal-500/25 mb-4 animate-scale-in">
-            <span className="text-white text-2xl font-black">◉</span>
+    <div className="min-h-screen flex flex-col max-w-md md:max-w-2xl mx-auto relative px-4">
+      {/* Header controls */}
+      <header className="py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="relative w-9 h-9 rounded-xl accent-bg flex items-center justify-center shrink-0">
+            <div className="shield-ring" />
+            <i className="fa-solid fa-shield-halved text-white text-sm" />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Cirvy
-          </h1>
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-            Private Social Space for Real Connections
-          </p>
+          <div className="leading-tight">
+            <p className="font-display font-bold text-[15px] text-main">{t('brand')}</p>
+            <p className="text-[10px] font-mono text-sub tracking-wide">
+              {t('shieldLabel')}
+            </p>
+          </div>
         </div>
 
-        {/* Login Card */}
-        <Card className="glass-card rounded-3xl border border-white/40 dark:border-white/10 shadow-2xl p-2 overflow-hidden">
-          <CardHeader className="text-center pb-3">
-            <CardTitle className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              Welcome back
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Sign in to access your trusted friends feed
-            </CardDescription>
-          </CardHeader>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleLang}
+            className="w-9 h-9 rounded-full field flex items-center justify-center text-xs font-mono font-semibold scale-tap cursor-pointer"
+          >
+            <span>{lang === 'ar' ? 'EN' : 'AR'}</span>
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-full field flex items-center justify-center scale-tap cursor-pointer"
+          >
+            <i className={`fa-solid ${dark ? 'fa-moon' : 'fa-sun'} text-sm`} />
+          </button>
+        </div>
+      </header>
 
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4 px-6">
-              {error && (
-                <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-3 text-xs font-semibold text-red-600 dark:text-red-400 animate-fade-in">
-                  {error}
-                </div>
-              )}
+      {/* Main Form */}
+      <main className="flex-1 flex flex-col justify-center py-6 view">
+        <div className="text-center mb-6">
+          <h1 className="font-display font-extrabold text-2xl text-main">
+            {t('authHeadline')}
+          </h1>
+          <p className="text-sub text-sm mt-2">{t('authSub')}</p>
+        </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="login-email" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Email Address
-                </Label>
-                <Input
-                  id="login-email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                  className="rounded-xl bg-slate-50/80 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm px-3.5 py-2.5"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="login-password" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Password
-                  </Label>
-                  <button
-                    type="button"
-                    onClick={() => { setShowForgot(true); setForgotEmail(email); }}
-                    className="text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-                <Input
-                  id="login-password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  className="rounded-xl bg-slate-50/80 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm px-3.5 py-2.5"
-                />
-              </div>
-            </CardContent>
-
-            <CardFooter className="flex-col gap-4 px-6 pt-2 pb-6">
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full btn-primary-gradient rounded-xl py-2.5 font-bold text-sm shadow-md"
-              >
-                {loading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <span className="flex items-center gap-1.5">
-                    Sign In <ArrowRight className="w-4 h-4" />
-                  </span>
-                )}
-              </Button>
-
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center">
-                Don&apos;t have an account?{' '}
-                <Link
-                  to="/signup"
-                  className="font-bold text-teal-600 dark:text-teal-400 hover:underline"
-                >
-                  Create an account
-                </Link>
-              </p>
-            </CardFooter>
-          </form>
-        </Card>
-      </div>
-
-      {/* Forgot Password Modal */}
-      {showForgot && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-md animate-fade-in"
-            onClick={() => { setShowForgot(false); setForgotSent(false); setForgotError(null); }}
-          />
-
-          <div className="relative w-full max-w-sm glass-card rounded-3xl p-6 shadow-2xl border border-white/20 dark:border-white/10 animate-scale-in z-10">
+        <div className="glass rounded-3xl p-5 shadow-glass">
+          {/* Tab Switcher */}
+          <div className="flex mb-6 rounded-full field p-1">
             <button
-              onClick={() => { setShowForgot(false); setForgotSent(false); setForgotError(null); }}
-              className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition"
+              onClick={() => {}}
+              className="flex-1 py-2 rounded-full text-sm font-semibold transition accent-bg text-white"
             >
-              <X className="h-4 w-4" />
+              {t('signIn')}
             </button>
+            <button
+              onClick={() => navigate('/signup')}
+              className="flex-1 py-2 rounded-full text-sm font-semibold transition text-sub scale-tap"
+            >
+              {t('signUp')}
+            </button>
+          </div>
 
-            {forgotSent ? (
-              <div className="text-center py-4 animate-fade-in">
-                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-500 shadow-sm">
-                  <Mail className="h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Check your inbox</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  We sent a reset link to <strong>{forgotEmail}</strong>
-                </p>
+          {error && (
+            <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/30 p-3 text-xs text-red-500 font-medium">
+              {error}
+            </div>
+          )}
+
+          {/* Login Form */}
+          <form id="loginForm" className="space-y-3" onSubmit={handleSubmit}>
+            <div>
+              <label className="text-xs font-medium text-sub">
+                {t('userOrEmail')}
+              </label>
+              <input
+                id="login-email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="field w-full rounded-xl px-4 py-3 mt-1 text-sm"
+                placeholder={t('userOrEmailPh')}
+                autoComplete="email"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-sub">
+                {t('password')}
+              </label>
+              <input
+                id="login-password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="field w-full rounded-xl px-4 py-3 mt-1 text-sm"
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotEmail(email)
+                  setShowForgot(true)
+                }}
+                className="text-xs accent-text font-semibold cursor-pointer scale-tap"
+              >
+                {t('forgotPassword')}
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full accent-bg text-white rounded-xl py-3 font-semibold text-sm scale-tap transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {loading && <i className="fa-solid fa-circle-notch fa-spin text-sm" />}
+              <span>{t('signInBtn')}</span>
+            </button>
+          </form>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="h-px flex-1" style={{ background: 'var(--card-border)' }} />
+            <span className="text-[11px] text-sub">{t('orContinue')}</span>
+            <div className="h-px flex-1" style={{ background: 'var(--card-border)' }} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => handleOAuth('google')}
+              className="field rounded-xl py-2.5 flex items-center justify-center gap-2 text-sm font-medium scale-tap transition cursor-pointer"
+            >
+              <i className="fa-brands fa-google text-[15px]" /> Google
+            </button>
+            <button
+              type="button"
+              onClick={() => handleOAuth('facebook')}
+              className="field rounded-xl py-2.5 flex items-center justify-center gap-2 text-sm font-medium scale-tap transition cursor-pointer"
+            >
+              <i className="fa-brands fa-facebook text-[15px] text-[#1877F2]" /> Facebook
+            </button>
+          </div>
+        </div>
+
+        <p className="text-center text-[11px] text-sub mt-5 flex items-center justify-center gap-1.5">
+          <i className="fa-solid fa-lock text-[10px]" />
+          <span>{t('authFooter')}</span>
+        </p>
+      </main>
+
+      {/* ============ MODAL: FORGOT PASSWORD ============ */}
+      {showForgot && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center px-4">
+          <div
+            className="modal-backdrop absolute inset-0 bg-black/50"
+            onClick={() => setShowForgot(false)}
+          />
+          <div className="modal-panel relative glass w-full md:w-96 rounded-3xl p-6 z-10">
+            <div className="w-11 h-11 rounded-full accent-soft-bg flex items-center justify-center mb-4">
+              <i className="fa-solid fa-key accent-text" />
+            </div>
+            <h3 className="font-display font-bold text-lg mb-1">{t('resetTitle')}</h3>
+            <p className="text-xs text-sub mb-4">{t('resetSub')}</p>
+            <form onSubmit={handleResetPassword}>
+              <input
+                id="resetEmailInput"
+                type="email"
+                required
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                className="field w-full rounded-xl px-4 py-3 text-sm mb-4"
+                placeholder="you@cirvy.app"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowForgot(false)}
+                  className="flex-1 field rounded-xl py-3 font-semibold text-sm scale-tap cursor-pointer"
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="flex-1 accent-bg text-white rounded-xl py-3 font-semibold text-sm scale-tap transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  {forgotLoading && (
+                    <i className="fa-solid fa-circle-notch fa-spin text-xs" />
+                  )}
+                  <span>{t('sendLink')}</span>
+                </button>
               </div>
-            ) : (
-              <>
-                <div className="w-10 h-10 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-500 mb-3">
-                  <Lock className="w-5 h-5" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Reset Password</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                  Enter your email address and we&apos;ll send you a password reset link.
-                </p>
-
-                {forgotError && (
-                  <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-3 text-xs font-semibold text-red-500 mb-3 animate-fade-in">
-                    {forgotError}
-                  </div>
-                )}
-
-                <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <Input
-                    type="email"
-                    placeholder="you@example.com"
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                    className="rounded-xl bg-slate-50/80 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm"
-                  />
-                  <Button type="submit" className="w-full btn-primary-gradient rounded-xl font-bold text-xs" disabled={forgotLoading}>
-                    {forgotLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Send Reset Link
-                  </Button>
-                </form>
-              </>
-            )}
+            </form>
           </div>
         </div>
       )}

@@ -1,21 +1,15 @@
+// src/pages/SignupPage.jsx
+// Create Private Account page matching the HTML design, wired to Supabase auth.
+
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Loader2, Check, ArrowRight } from 'lucide-react'
+import { useUI } from '@/contexts/UIContext'
+import { supabase } from '@/lib/supabase'
 
 export default function SignupPage() {
   const { signUp } = useAuth()
+  const { t, showToast, lang, toggleLang, dark, toggleTheme } = useUI()
   const navigate = useNavigate()
 
   const [form, setForm] = useState({
@@ -45,6 +39,7 @@ export default function SignupPage() {
     }
 
     if (data?.session) {
+      showToast(t('signupSuccess'))
       navigate('/feed')
     } else {
       setConfirmEmail(true)
@@ -52,202 +47,204 @@ export default function SignupPage() {
     setLoading(false)
   }
 
-  const getPasswordStrength = () => {
-    const pw = form.password
-    if (!pw) return { level: 0, label: '', color: '' }
-    let score = 0
-    if (pw.length >= 6) score++
-    if (pw.length >= 8) score++
-    if (/[A-Z]/.test(pw)) score++
-    if (/[0-9]/.test(pw)) score++
-    if (/[^A-Za-z0-9]/.test(pw)) score++
-
-    if (score <= 1) return { level: 1, label: 'Weak', color: '#ef4444' }
-    if (score <= 2) return { level: 2, label: 'Fair', color: '#f59e0b' }
-    if (score <= 3) return { level: 3, label: 'Good', color: '#0d9488' }
-    return { level: 4, label: 'Strong', color: '#10b981' }
-  }
-
-  const pwStrength = getPasswordStrength()
-
-  if (confirmEmail) {
-    return (
-      <div className="ambient-bg flex min-h-svh items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md animate-fade-in-up">
-          <Card className="glass-card rounded-3xl border border-white/40 dark:border-white/10 shadow-2xl p-6 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-teal-500/10 text-teal-500 shadow-md">
-              <Check className="h-8 w-8" strokeWidth={3} />
-            </div>
-            <CardTitle className="text-2xl font-extrabold text-slate-900 dark:text-white mb-2">
-              Check your inbox
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mb-6">
-              We sent a verification link to <strong>{form.email}</strong>. Click it to activate your Cirvy account.
-            </CardDescription>
-            <CardFooter className="justify-center p-0">
-              <Link to="/login" className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline">
-                Back to Sign In
-              </Link>
-            </CardFooter>
-          </Card>
-        </div>
-      </div>
-    )
+  const handleOAuth = async (provider) => {
+    const { error: oError } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/feed`,
+      },
+    })
+    if (oError) showToast(oError.message)
   }
 
   return (
-    <div className="ambient-bg flex min-h-svh items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md animate-fade-in-up">
-        {/* Brand Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex w-14 h-14 rounded-3xl bg-gradient-to-tr from-teal-500 via-cyan-500 to-indigo-500 items-center justify-center shadow-xl shadow-teal-500/25 mb-4 animate-scale-in">
-            <span className="text-white text-2xl font-black">◉</span>
+    <div className="min-h-screen flex flex-col max-w-md md:max-w-2xl mx-auto relative px-4">
+      {/* Header controls */}
+      <header className="py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="relative w-9 h-9 rounded-xl accent-bg flex items-center justify-center shrink-0">
+            <div className="shield-ring" />
+            <i className="fa-solid fa-shield-halved text-white text-sm" />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Create Account
-          </h1>
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-            Join your private friends-only network
-          </p>
+          <div className="leading-tight">
+            <p className="font-display font-bold text-[15px] text-main">{t('brand')}</p>
+            <p className="text-[10px] font-mono text-sub tracking-wide">
+              {t('shieldLabel')}
+            </p>
+          </div>
         </div>
 
-        {/* Form Card */}
-        <Card className="glass-card rounded-3xl border border-white/40 dark:border-white/10 shadow-2xl p-2 overflow-hidden">
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-xl font-extrabold text-slate-900 dark:text-white">
-              Get Started with Cirvy
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Your profile is private by default
-            </CardDescription>
-          </CardHeader>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleLang}
+            className="w-9 h-9 rounded-full field flex items-center justify-center text-xs font-mono font-semibold scale-tap cursor-pointer"
+          >
+            <span>{lang === 'ar' ? 'EN' : 'AR'}</span>
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-full field flex items-center justify-center scale-tap cursor-pointer"
+          >
+            <i className={`fa-solid ${dark ? 'fa-moon' : 'fa-sun'} text-sm`} />
+          </button>
+        </div>
+      </header>
 
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-3.5 px-6">
+      {/* Main Container */}
+      <main className="flex-1 flex flex-col justify-center py-6 view">
+        <div className="text-center mb-6">
+          <h1 className="font-display font-extrabold text-2xl text-main">
+            {t('authHeadline')}
+          </h1>
+          <p className="text-sub text-sm mt-2">{t('authSub')}</p>
+        </div>
+
+        <div className="glass rounded-3xl p-5 shadow-glass">
+          {/* Tab Switcher */}
+          <div className="flex mb-6 rounded-full field p-1">
+            <button
+              onClick={() => navigate('/login')}
+              className="flex-1 py-2 rounded-full text-sm font-semibold transition text-sub scale-tap"
+            >
+              {t('signIn')}
+            </button>
+            <button
+              onClick={() => {}}
+              className="flex-1 py-2 rounded-full text-sm font-semibold transition accent-bg text-white"
+            >
+              {t('signUp')}
+            </button>
+          </div>
+
+          {confirmEmail ? (
+            <div className="text-center py-6 space-y-3">
+              <div className="w-12 h-12 rounded-full accent-soft-bg flex items-center justify-center mx-auto text-lg accent-text">
+                <i className="fa-solid fa-envelope-circle-check" />
+              </div>
+              <h3 className="font-display font-bold text-lg">Check your inbox</h3>
+              <p className="text-xs text-sub max-w-xs mx-auto">
+                We sent a confirmation link to <strong>{form.email}</strong>. Click it
+                to activate your private account.
+              </p>
+              <button
+                onClick={() => navigate('/login')}
+                className="accent-bg text-white px-5 py-2.5 rounded-xl text-xs font-semibold scale-tap mt-2"
+              >
+                Back to Sign In
+              </button>
+            </div>
+          ) : (
+            <>
               {error && (
-                <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-3 text-xs font-semibold text-red-600 dark:text-red-400 animate-fade-in">
+                <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/30 p-3 text-xs text-red-500 font-medium">
                   {error}
                 </div>
               )}
 
-              <div className="space-y-1.5">
-                <Label htmlFor="signup-email" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Email Address
-                </Label>
-                <Input
-                  id="signup-email"
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={form.email}
-                  onChange={handleChange}
-                  required
-                  autoComplete="email"
-                  className="rounded-xl bg-slate-50/80 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="signup-password" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Password
-                </Label>
-                <Input
-                  id="signup-password"
-                  name="password"
-                  type="password"
-                  placeholder="At least 6 characters"
-                  value={form.password}
-                  onChange={handleChange}
-                  required
-                  minLength={6}
-                  autoComplete="new-password"
-                  className="rounded-xl bg-slate-50/80 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm"
-                />
-                {form.password && (
-                  <div className="animate-fade-in pt-1">
-                    <div className="flex gap-1.5">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div
-                          key={i}
-                          className="h-1.5 flex-1 rounded-full transition-all duration-300"
-                          style={{
-                            background: i <= pwStrength.level ? pwStrength.color : 'rgba(148, 163, 184, 0.2)',
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <p className="text-[11px] font-semibold mt-1" style={{ color: pwStrength.color }}>
-                      Password strength: {pwStrength.label}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="signup-username" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Username
-                  </Label>
-                  <Input
-                    id="signup-username"
-                    name="username"
-                    type="text"
-                    placeholder="alex_99"
-                    value={form.username}
-                    onChange={handleChange}
-                    required
-                    autoComplete="username"
-                    className="rounded-xl bg-slate-50/80 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="signup-displayname" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Display Name
-                  </Label>
-                  <Input
+              {/* Signup Form */}
+              <form id="signupForm" className="space-y-3" onSubmit={handleSubmit}>
+                <div>
+                  <label className="text-xs font-medium text-sub">{t('fullName')}</label>
+                  <input
                     id="signup-displayname"
                     name="displayName"
                     type="text"
-                    placeholder="Alex Morgan"
+                    required
                     value={form.displayName}
                     onChange={handleChange}
-                    required
+                    className="field w-full rounded-xl px-4 py-3 mt-1 text-sm"
+                    placeholder="Adham Ali"
                     autoComplete="name"
-                    className="rounded-xl bg-slate-50/80 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm"
                   />
                 </div>
-              </div>
-            </CardContent>
 
-            <CardFooter className="flex-col gap-4 px-6 pt-3 pb-6">
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full btn-primary-gradient rounded-xl py-2.5 font-bold text-sm shadow-md"
-              >
-                {loading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <span className="flex items-center gap-1.5">
-                    Create Account <ArrowRight className="w-4 h-4" />
-                  </span>
-                )}
-              </Button>
+                <div>
+                  <label className="text-xs font-medium text-sub">{t('username')}</label>
+                  <input
+                    id="signup-username"
+                    name="username"
+                    type="text"
+                    required
+                    value={form.username}
+                    onChange={handleChange}
+                    className="field w-full rounded-xl px-4 py-3 mt-1 text-sm"
+                    placeholder="@adham"
+                    autoComplete="username"
+                  />
+                </div>
 
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center">
-                Already have an account?{' '}
-                <Link
-                  to="/login"
-                  className="font-bold text-teal-600 dark:text-teal-400 hover:underline"
+                <div>
+                  <label className="text-xs font-medium text-sub">{t('email')}</label>
+                  <input
+                    id="signup-email"
+                    name="email"
+                    type="email"
+                    required
+                    value={form.email}
+                    onChange={handleChange}
+                    className="field w-full rounded-xl px-4 py-3 mt-1 text-sm"
+                    placeholder="adham@cirvy.app"
+                    autoComplete="email"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-sub">{t('password')}</label>
+                  <input
+                    id="signup-password"
+                    name="password"
+                    type="password"
+                    required
+                    minLength={6}
+                    value={form.password}
+                    onChange={handleChange}
+                    className="field w-full rounded-xl px-4 py-3 mt-1 text-sm"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full accent-bg text-white rounded-xl py-3 font-semibold text-sm scale-tap transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer mt-2"
                 >
-                  Sign in
-                </Link>
-              </p>
-            </CardFooter>
-          </form>
-        </Card>
-      </div>
+                  {loading && <i className="fa-solid fa-circle-notch fa-spin text-sm" />}
+                  <span>{t('createAccount')}</span>
+                </button>
+              </form>
+
+              <div className="flex items-center gap-3 my-5">
+                <div className="h-px flex-1" style={{ background: 'var(--card-border)' }} />
+                <span className="text-[11px] text-sub">{t('orContinue')}</span>
+                <div className="h-px flex-1" style={{ background: 'var(--card-border)' }} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleOAuth('google')}
+                  className="field rounded-xl py-2.5 flex items-center justify-center gap-2 text-sm font-medium scale-tap transition cursor-pointer"
+                >
+                  <i className="fa-brands fa-google text-[15px]" /> Google
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOAuth('facebook')}
+                  className="field rounded-xl py-2.5 flex items-center justify-center gap-2 text-sm font-medium scale-tap transition cursor-pointer"
+                >
+                  <i className="fa-brands fa-facebook text-[15px] text-[#1877F2]" /> Facebook
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        <p className="text-center text-[11px] text-sub mt-5 flex items-center justify-center gap-1.5">
+          <i className="fa-solid fa-lock text-[10px]" />
+          <span>{t('authFooter')}</span>
+        </p>
+      </main>
     </div>
   )
 }

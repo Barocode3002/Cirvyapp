@@ -1,25 +1,17 @@
 // src/components/PostCard.jsx
-// Renders feed posts with full author info, actions, likes, and comment drawer.
+// Renders feed posts matching the HTML layout and schema.
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import {
-  Heart,
-  MessageCircle,
-  MoreHorizontal,
-  Edit3,
-  Trash2,
-  EyeOff,
-  Send,
-  Loader2,
-} from 'lucide-react'
+import { useUI } from '@/contexts/UIContext'
 
 export default function PostCard({ post, currentUserId, onPostUpdated }) {
+  const { t, showToast } = useUI()
+
   // ---- Likes ----
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
-  const [likeAnimating, setLikeAnimating] = useState(false)
 
   // ---- Comments ----
   const [showComments, setShowComments] = useState(false)
@@ -28,9 +20,10 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
   const [loadingComments, setLoadingComments] = useState(false)
   const [submittingComment, setSubmittingComment] = useState(false)
 
-  // ---- Menu ----
+  // ---- Menu Modals ----
   const [showMenu, setShowMenu] = useState(false)
-  const menuRef = useRef(null)
+  const [showAudienceModal, setShowAudienceModal] = useState(false)
+  const [audienceChoice, setAudienceChoice] = useState('approved')
 
   // ---- Edit mode ----
   const [editing, setEditing] = useState(false)
@@ -60,16 +53,6 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
     }
   }, [post.id, currentUserId])
 
-  useEffect(() => {
-    function handleClick(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setShowMenu(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
-
   async function toggleLike() {
     if (liked) {
       setLiked(false)
@@ -82,8 +65,6 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
     } else {
       setLiked(true)
       setLikeCount((c) => c + 1)
-      setLikeAnimating(true)
-      setTimeout(() => setLikeAnimating(false), 600)
       await supabase
         .from('likes')
         .insert({ post_id: post.id, user_id: currentUserId })
@@ -124,6 +105,7 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
   async function handleDelete() {
     setShowMenu(false)
     await supabase.from('posts').delete().eq('id', post.id)
+    showToast(t('postDeleted'))
     onPostUpdated?.()
   }
 
@@ -134,6 +116,7 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
       .update({ content: editContent.trim() })
       .eq('id', post.id)
     setEditing(false)
+    showToast(t('postEdit'))
     onPostUpdated?.()
   }
 
@@ -145,260 +128,334 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
       el.style.opacity = '0'
       el.style.maxHeight = '0'
       el.style.overflow = 'hidden'
-      el.style.marginBottom = '0'
+      el.style.margin = '0'
       el.style.padding = '0'
     }
+    showToast(t('postHidden'))
   }
 
   const author = post.author || {}
   const timeAgo = formatTimeAgo(post.created_at)
 
-  const getInitials = (name) => {
-    if (!name) return 'U'
-    const parts = name.trim().split(' ')
-    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-    return name.slice(0, 2).toUpperCase()
+  function formatNum(n) {
+    if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'K'
+    return n
   }
 
   return (
-    <article
-      id={`post-${post.id}`}
-      className="glass-card glass-card-hover rounded-3xl overflow-hidden shadow-sm transition-all duration-300 animate-fade-in-up"
-    >
-      {/* Post Header */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <Link to={`/profile/${author.id}`} className="shrink-0 group">
-            {author.avatar_url ? (
+    <>
+      <article
+        id={`post-${post.id}`}
+        className="glass rounded-3xl overflow-hidden shadow-glass transition-all duration-300"
+      >
+        {/* Post Header */}
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <Link to={`/profile/${author.id}`}>
               <img
-                src={author.avatar_url}
-                alt={author.display_name}
-                className="w-11 h-11 rounded-2xl object-cover ring-2 ring-slate-200 dark:ring-white/10 group-hover:ring-teal-500 transition-all shadow-sm"
+                src={
+                  author.avatar_url ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    author.display_name || 'User'
+                  )}&background=217a67&color=fff`
+                }
+                alt=""
+                className="w-9 h-9 rounded-full object-cover"
               />
-            ) : (
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-teal-500 to-cyan-500 text-white font-bold flex items-center justify-center text-sm shadow-md shadow-teal-500/20 group-hover:scale-105 transition-transform">
-                {getInitials(author.display_name)}
-              </div>
-            )}
-          </Link>
-
-          <div className="min-w-0">
-            <Link
-              to={`/profile/${author.id}`}
-              className="text-base font-bold text-slate-900 dark:text-white hover:text-teal-500 dark:hover:text-teal-400 transition-colors truncate block"
-            >
-              {author.display_name || 'Member'}
             </Link>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              @{author.username || 'user'} · <span>{timeAgo}</span>
-            </p>
+            <div className="leading-tight">
+              <Link
+                to={`/profile/${author.id}`}
+                className="text-sm font-semibold flex items-center gap-1 hover:underline text-main"
+              >
+                <span>{author.display_name || 'User'}</span>
+                <i
+                  className="fa-solid fa-badge-check text-[11px]"
+                  style={{ color: 'var(--gilt-500, #c9a227)' }}
+                />
+              </Link>
+              <p className="text-[11px] text-sub">
+                @{author.username || 'user'} · {timeAgo}
+              </p>
+            </div>
           </div>
+
+          <button
+            onClick={() => setShowMenu(true)}
+            className="w-8 h-8 rounded-full field flex items-center justify-center scale-tap transition cursor-pointer"
+            aria-label="Options"
+          >
+            <i className="fa-solid fa-ellipsis text-sm" />
+          </button>
         </div>
 
-        {/* 3-dot Action Menu */}
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition"
-            aria-label="Post actions"
-          >
-            <MoreHorizontal className="h-5 w-5" />
-          </button>
+        {/* Post Image */}
+        {post.image_url && (
+          <img
+            src={post.image_url}
+            alt="Post media"
+            className="w-full post-img"
+            loading="lazy"
+          />
+        )}
 
-          {showMenu && (
-            <div className="absolute right-0 top-full mt-1.5 w-44 py-1.5 rounded-2xl glass-card shadow-2xl border border-white/20 dark:border-white/10 z-30 animate-scale-in">
-              {isOwner && (
-                <>
-                  <button
-                    onClick={() => { setShowMenu(false); setEditing(true); }}
-                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition"
-                  >
-                    <Edit3 className="h-4 w-4 text-teal-500" />
-                    <span>Edit Post</span>
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    <span>Delete Post</span>
-                  </button>
-                </>
-              )}
-              <button
-                onClick={handleHide}
-                className="flex items-center gap-2.5 w-full px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition"
-              >
-                <EyeOff className="h-4 w-4 text-slate-400" />
-                <span>Hide from Feed</span>
-              </button>
+        {/* Post Body & Actions */}
+        <div className="px-4 py-3">
+          <div className="flex items-center gap-4 mb-2.5">
+            <button
+              onClick={toggleLike}
+              className="flex items-center gap-1.5 text-sm scale-tap transition cursor-pointer"
+            >
+              <i
+                className={`${liked ? 'fa-solid text-[#e0245e]' : 'fa-regular'} fa-heart`}
+              />
+              <span className="like-count font-medium">{formatNum(likeCount)}</span>
+            </button>
+
+            <button
+              onClick={handleToggleComments}
+              className="flex items-center gap-1.5 text-sm scale-tap transition cursor-pointer"
+            >
+              <i className="fa-regular fa-comment" />
+              <span className="font-medium">{formatNum(comments.length)}</span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: 'Cirvy Post',
+                    text: post.content,
+                    url: window.location.href,
+                  })
+                } else {
+                  showToast('Link copied to clipboard')
+                }
+              }}
+              className="flex items-center gap-1.5 text-sm scale-tap transition ms-auto cursor-pointer"
+            >
+              <i className="fa-regular fa-paper-plane" />
+            </button>
+          </div>
+
+          {editing ? (
+            <div className="space-y-2 mt-2">
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="field w-full rounded-xl p-3 text-sm"
+                rows={3}
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => {
+                    setEditing(false)
+                    setEditContent(post.content || '')
+                  }}
+                  className="field px-3 py-1.5 rounded-lg text-xs font-semibold"
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  onClick={handleEdit}
+                  className="accent-bg text-white px-3 py-1.5 rounded-lg text-xs font-semibold"
+                >
+                  {t('save')}
+                </button>
+              </div>
             </div>
+          ) : (
+            <p className="text-sm leading-relaxed">
+              <span className="font-semibold">@{author.username || 'user'}</span>{' '}
+              {post.content}
+            </p>
           )}
         </div>
-      </div>
 
-      {/* Post Content */}
-      <div className="px-5 pb-3">
-        {editing ? (
-          <div className="space-y-3">
-            <textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 px-4 py-3 text-sm text-slate-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-teal-500/50"
-              rows={3}
-            />
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => { setEditing(false); setEditContent(post.content || ''); }}
-                className="px-3.5 py-1.5 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleEdit}
-                className="px-4 py-1.5 text-xs font-semibold rounded-xl btn-primary-gradient shadow-md"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm md:text-base text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap font-normal">
-            {post.content}
-          </p>
-        )}
-      </div>
-
-      {/* Post Image */}
-      {post.image_url && (
-        <div className="px-5 pb-4">
-          <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 max-h-[460px] bg-slate-900/5 dark:bg-black/40">
-            <img
-              src={post.image_url}
-              alt="Post media"
-              className="w-full h-full object-cover max-h-[460px]"
-              loading="lazy"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Post Actions (Like & Comment) */}
-      <div className="flex items-center gap-2 px-5 py-3 border-t border-slate-200/80 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
-        <button
-          onClick={toggleLike}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
-            liked
-              ? 'text-rose-500 bg-rose-500/10'
-              : 'text-slate-600 dark:text-slate-400 hover:text-rose-500 hover:bg-rose-500/10'
-          }`}
-        >
-          <Heart
-            className={`h-4 w-4 transition-transform ${liked ? 'fill-rose-500 stroke-rose-500' : ''} ${likeAnimating ? 'animate-heart-beat' : ''}`}
-          />
-          <span>{likeCount > 0 ? `${likeCount} Likes` : 'Like'}</span>
-        </button>
-
-        <button
-          onClick={handleToggleComments}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
-            showComments
-              ? 'text-teal-600 dark:text-teal-400 bg-teal-500/10'
-              : 'text-slate-600 dark:text-slate-400 hover:text-teal-500 hover:bg-teal-500/10'
-          }`}
-        >
-          <MessageCircle className="h-4 w-4" />
-          <span>Comments</span>
-        </button>
-      </div>
-
-      {/* Expandable Comment Drawer */}
-      {showComments && (
-        <div className="border-t border-slate-200/80 dark:border-white/5 bg-slate-50/70 dark:bg-black/30 animate-fade-in-up">
-          <div className="px-5 py-4 space-y-3.5 max-h-72 overflow-y-auto">
-            {loadingComments ? (
-              <div className="flex items-center justify-center py-6 gap-2 text-slate-400 text-xs">
-                <Loader2 className="h-4 w-4 animate-spin text-teal-500" />
-                <span>Loading comments…</span>
-              </div>
-            ) : comments.length === 0 ? (
-              <p className="text-xs font-medium text-slate-400 text-center py-4">
-                No comments yet. Share your thoughts!
-              </p>
-            ) : (
-              comments.map((c) => (
-                <div key={c.id} className="flex items-start gap-3 text-xs animate-fade-in">
-                  <Link to={`/profile/${c.user?.id}`} className="shrink-0 mt-0.5">
-                    {c.user?.avatar_url ? (
-                      <img
-                        src={c.user.avatar_url}
-                        alt=""
-                        className="w-7 h-7 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-white/10"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-teal-500 to-cyan-500 text-white font-bold flex items-center justify-center text-[10px]">
-                        {getInitials(c.user?.display_name)}
-                      </div>
-                    )}
-                  </Link>
-
-                  <div className="flex-1 bg-white dark:bg-slate-800/80 rounded-2xl px-3.5 py-2.5 border border-slate-200/80 dark:border-white/5 shadow-2xs">
-                    <div className="flex items-center justify-between mb-1">
-                      <Link
-                        to={`/profile/${c.user?.id}`}
-                        className="font-bold text-slate-900 dark:text-white hover:text-teal-500 transition-colors"
-                      >
-                        {c.user?.display_name || 'User'}
-                      </Link>
-                      <span className="text-[10px] text-slate-400">
-                        {formatTimeAgo(c.created_at)}
-                      </span>
-                    </div>
-                    <p className="text-slate-700 dark:text-slate-300 font-normal leading-relaxed">
-                      {c.content}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Comment input form */}
-          <form onSubmit={submitComment} className="flex items-center gap-2 px-5 py-3 border-t border-slate-200/80 dark:border-white/5">
-            <input
-              type="text"
-              placeholder="Write a comment…"
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              className="flex-1 bg-white dark:bg-slate-800/80 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-teal-500/50"
-            />
-            <button
-              type="submit"
-              disabled={!commentText.trim() || submittingComment}
-              className="p-2.5 rounded-xl btn-primary-gradient disabled:opacity-40 shadow-sm transition"
-            >
-              {submittingComment ? (
-                <Loader2 className="h-4 w-4 animate-spin text-white" />
+        {/* Expandable Comment Drawer */}
+        {showComments && (
+          <div className="border-t border-[var(--card-border)] bg-[var(--bg-alt)]/50 p-4 space-y-3">
+            <div className="space-y-2.5 max-h-60 overflow-y-auto">
+              {loadingComments ? (
+                <p className="text-xs text-sub text-center py-2">Loading comments…</p>
+              ) : comments.length === 0 ? (
+                <p className="text-xs text-sub text-center py-2">
+                  No comments yet. Share your thoughts!
+                </p>
               ) : (
-                <Send className="h-4 w-4 text-white" />
+                comments.map((c) => (
+                  <div key={c.id} className="flex items-start gap-2 text-xs">
+                    <img
+                      src={
+                        c.user?.avatar_url ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          c.user?.display_name || 'U'
+                        )}&background=217a67&color=fff`
+                      }
+                      alt=""
+                      className="w-6 h-6 rounded-full object-cover mt-0.5"
+                    />
+                    <div className="flex-1 bg-[var(--card-bg)] rounded-xl p-2 border border-[var(--card-border)]">
+                      <span className="font-bold text-main">
+                        @{c.user?.username || 'user'}:{' '}
+                      </span>
+                      <span className="text-sub">{c.content}</span>
+                    </div>
+                  </div>
+                ))
               )}
+            </div>
+
+            {/* Add comment input */}
+            <form onSubmit={submitComment} className="flex gap-2 pt-1">
+              <input
+                type="text"
+                placeholder="Write a private reply…"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                className="field flex-1 rounded-xl px-3 py-2 text-xs"
+              />
+              <button
+                type="submit"
+                disabled={!commentText.trim() || submittingComment}
+                className="accent-bg text-white px-3 py-2 rounded-xl text-xs font-semibold scale-tap disabled:opacity-50 cursor-pointer"
+              >
+                {submittingComment ? '…' : 'Send'}
+              </button>
+            </form>
+          </div>
+        )}
+      </article>
+
+      {/* ============ MODAL: 3-DOT POST MENU ============ */}
+      {showMenu && (
+        <div className="fixed inset-0 z-[90] flex items-end md:items-center justify-center">
+          <div
+            className="modal-backdrop absolute inset-0 bg-black/50"
+            onClick={() => setShowMenu(false)}
+          />
+          <div className="modal-panel relative glass w-full md:w-96 rounded-t-3xl md:rounded-3xl p-2 pb-safe z-10">
+            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto my-2 md:hidden" />
+            {isOwner && (
+              <button
+                onClick={() => {
+                  setShowMenu(false)
+                  setEditing(true)
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-medium scale-tap transition cursor-pointer"
+              >
+                <i className="fa-solid fa-pen w-5" />
+                <span>{t('menuEdit')}</span>
+              </button>
+            )}
+            <button
+              onClick={handleHide}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-medium scale-tap transition cursor-pointer"
+            >
+              <i className="fa-solid fa-eye-slash w-5" />
+              <span>{t('menuHide')}</span>
             </button>
-          </form>
+            <button
+              onClick={() => {
+                setShowMenu(false)
+                setShowAudienceModal(true)
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-medium scale-tap transition cursor-pointer"
+            >
+              <i className="fa-solid fa-user-shield w-5" />
+              <span>{t('menuAudience')}</span>
+            </button>
+            {isOwner && (
+              <button
+                onClick={handleDelete}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-red-500 scale-tap transition cursor-pointer"
+              >
+                <i className="fa-solid fa-trash w-5" />
+                <span>{t('menuDelete')}</span>
+              </button>
+            )}
+            <button
+              onClick={() => setShowMenu(false)}
+              className="w-full text-center py-3.5 text-sm font-semibold text-sub mt-1 cursor-pointer"
+            >
+              {t('cancel')}
+            </button>
+          </div>
         </div>
       )}
-    </article>
+
+      {/* ============ MODAL: COMMENT AUDIENCE ============ */}
+      {showAudienceModal && (
+        <div className="fixed inset-0 z-[90] flex items-end md:items-center justify-center">
+          <div
+            className="modal-backdrop absolute inset-0 bg-black/50"
+            onClick={() => setShowAudienceModal(false)}
+          />
+          <div className="modal-panel relative glass w-full md:w-96 rounded-t-3xl md:rounded-3xl p-5 z-10">
+            <h3 className="font-display font-bold text-lg mb-1">
+              {t('audienceTitle')}
+            </h3>
+            <p className="text-xs text-sub mb-4">{t('audienceSub')}</p>
+            <div className="space-y-2">
+              <label className="flex items-center justify-between field rounded-xl px-4 py-3.5 cursor-pointer">
+                <span className="text-sm font-medium">{t('everyone')}</span>
+                <input
+                  type="radio"
+                  name={`audience-${post.id}`}
+                  checked={audienceChoice === 'approved'}
+                  onChange={() => setAudienceChoice('approved')}
+                  className="w-4 h-4 accent-[#217a67]"
+                />
+              </label>
+              <label className="flex items-center justify-between field rounded-xl px-4 py-3.5 cursor-pointer">
+                <span className="text-sm font-medium">{t('closeFriendsOnly')}</span>
+                <input
+                  type="radio"
+                  name={`audience-${post.id}`}
+                  checked={audienceChoice === 'close'}
+                  onChange={() => setAudienceChoice('close')}
+                  className="w-4 h-4 accent-[#217a67]"
+                />
+              </label>
+              <label className="flex items-center justify-between field rounded-xl px-4 py-3.5 cursor-pointer">
+                <span className="text-sm font-medium">{t('disableComments')}</span>
+                <input
+                  type="radio"
+                  name={`audience-${post.id}`}
+                  checked={audienceChoice === 'disabled'}
+                  onChange={() => setAudienceChoice('disabled')}
+                  className="w-4 h-4 accent-[#217a67]"
+                />
+              </label>
+            </div>
+            <button
+              onClick={() => {
+                setShowAudienceModal(false)
+                showToast(t('audienceSaved'))
+              }}
+              className="w-full accent-bg text-white rounded-xl py-3 font-semibold text-sm mt-5 scale-tap transition cursor-pointer"
+            >
+              {t('save')}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
 function formatTimeAgo(dateStr) {
-  if (!dateStr) return ''
+  if (!dateStr) return 'now'
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
+  if (mins < 1) return 'now'
   if (mins < 60) return `${mins}m`
   const hrs = Math.floor(mins / 60)
   if (hrs < 24) return `${hrs}h`
   const days = Math.floor(hrs / 24)
   if (days < 7) return `${days}d`
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
 }

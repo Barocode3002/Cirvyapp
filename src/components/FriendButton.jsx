@@ -1,11 +1,12 @@
 // src/components/FriendButton.jsx
-// Interactive Friend status button.
+// Interactive Friend status button matching the HTML pill buttons.
 
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { UserPlus, Check, Clock, Loader2 } from 'lucide-react'
+import { useUI } from '@/contexts/UIContext'
 
 export default function FriendButton({ profileId, currentUserId }) {
+  const { t, showToast } = useUI()
   const [status, setStatus] = useState('loading')
   const [friendshipId, setFriendshipId] = useState(null)
 
@@ -15,6 +16,7 @@ export default function FriendButton({ profileId, currentUserId }) {
       .from('friendships')
       .insert({ requester_id: currentUserId, addressee_id: profileId, status: 'pending' })
     if (error) setStatus('none')
+    else showToast('Friend request sent')
   }
 
   async function acceptRequest() {
@@ -24,6 +26,7 @@ export default function FriendButton({ profileId, currentUserId }) {
       .update({ status: 'accepted' })
       .eq('id', friendshipId)
     if (error) setStatus('pending_received')
+    else showToast(t('friendAccepted'))
   }
 
   useEffect(() => {
@@ -34,15 +37,22 @@ export default function FriendButton({ profileId, currentUserId }) {
       const { data } = await supabase
         .from('friendships')
         .select('id, status, requester_id, addressee_id')
-        .or(`and(requester_id.eq.${currentUserId},addressee_id.eq.${profileId}),and(requester_id.eq.${profileId},addressee_id.eq.${currentUserId})`)
+        .or(
+          `and(requester_id.eq.${currentUserId},addressee_id.eq.${profileId}),and(requester_id.eq.${profileId},addressee_id.eq.${currentUserId})`
+        )
         .maybeSingle()
 
-      if (!data) { setStatus('none'); return }
+      if (!data) {
+        setStatus('none')
+        return
+      }
       setFriendshipId(data.id)
 
       if (data.status === 'accepted') setStatus('friends')
-      else if (data.status === 'pending' && data.requester_id === currentUserId) setStatus('pending_sent')
-      else if (data.status === 'pending' && data.addressee_id === currentUserId) setStatus('pending_received')
+      else if (data.status === 'pending' && data.requester_id === currentUserId)
+        setStatus('pending_sent')
+      else if (data.status === 'pending' && data.addressee_id === currentUserId)
+        setStatus('pending_received')
     }
   }, [profileId, currentUserId])
 
@@ -50,20 +60,18 @@ export default function FriendButton({ profileId, currentUserId }) {
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center p-2">
-        <Loader2 className="h-4 w-4 animate-spin text-teal-500" />
+        <i className="fa-solid fa-circle-notch fa-spin text-xs accent-text" />
       </div>
     )
   }
-
-  const base = "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer"
 
   if (status === 'none') {
     return (
       <button
         onClick={sendRequest}
-        className={`${base} btn-primary-gradient shadow-md active:scale-95`}
+        className="accent-bg text-white text-xs font-semibold px-4 py-2 rounded-full scale-tap transition cursor-pointer flex items-center gap-1.5"
       >
-        <UserPlus className="h-3.5 w-3.5" strokeWidth={2.5} />
+        <i className="fa-solid fa-user-plus text-[10px]" />
         <span>Add Friend</span>
       </button>
     )
@@ -73,9 +81,9 @@ export default function FriendButton({ profileId, currentUserId }) {
     return (
       <button
         disabled
-        className={`${base} bg-slate-200/70 dark:bg-white/10 text-slate-600 dark:text-slate-300 cursor-default border border-slate-300/50 dark:border-white/10`}
+        className="field text-sub text-xs font-semibold px-4 py-2 rounded-full cursor-default flex items-center gap-1.5 opacity-80"
       >
-        <Clock className="h-3.5 w-3.5 text-teal-500" />
+        <i className="fa-solid fa-clock text-[10px]" />
         <span>Request Sent</span>
       </button>
     )
@@ -85,9 +93,9 @@ export default function FriendButton({ profileId, currentUserId }) {
     return (
       <button
         onClick={acceptRequest}
-        className={`${base} btn-primary-gradient shadow-md active:scale-95`}
+        className="accent-bg text-white text-xs font-semibold px-4 py-2 rounded-full scale-tap transition cursor-pointer flex items-center gap-1.5"
       >
-        <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+        <i className="fa-solid fa-check text-[10px]" />
         <span>Accept Request</span>
       </button>
     )
@@ -97,9 +105,9 @@ export default function FriendButton({ profileId, currentUserId }) {
     return (
       <button
         disabled
-        className={`${base} bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 cursor-default shadow-xs`}
+        className="accent-soft-bg accent-text text-xs font-semibold px-4 py-2 rounded-full cursor-default flex items-center gap-1.5"
       >
-        <Check className="h-3.5 w-3.5" strokeWidth={3} />
+        <i className="fa-solid fa-user-check text-[10px]" />
         <span>Connected</span>
       </button>
     )
