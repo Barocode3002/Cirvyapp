@@ -128,7 +128,7 @@ export default function FriendRequests() {
                             f.avatar_url ||
                             `https://ui-avatars.com/api/?name=${encodeURIComponent(
                               f.display_name || 'U'
-                            )}&background=217a67&color=fff`
+                            )}&background=4A7A8C&color=fff`
                           }
                           alt=""
                           className="w-11 h-11 rounded-full object-cover"
@@ -172,7 +172,7 @@ export default function FriendRequests() {
                             r.requester.avatar_url ||
                             `https://ui-avatars.com/api/?name=${encodeURIComponent(
                               r.requester.display_name || 'U'
-                            )}&background=217a67&color=fff`
+                            )}&background=4A7A8C&color=fff`
                           }
                           alt=""
                           className="w-11 h-11 rounded-full object-cover"

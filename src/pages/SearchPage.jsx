@@ -81,7 +81,7 @@ export default function SearchPage() {
                     u.avatar_url ||
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
                       u.display_name || 'User'
-                    )}&background=217a67&color=fff`
+                    )}&background=4A7A8C&color=fff`
                   }
                   alt=""
                   className="w-11 h-11 rounded-full object-cover"

@@ -157,7 +157,7 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
                   author.avatar_url ||
                   `https://ui-avatars.com/api/?name=${encodeURIComponent(
                     author.display_name || 'User'
-                  )}&background=217a67&color=fff`
+                  )}&background=4A7A8C&color=fff`
                 }
                 alt=""
                 className="w-9 h-9 rounded-full object-cover"
@@ -290,7 +290,7 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
                         c.user?.avatar_url ||
                         `https://ui-avatars.com/api/?name=${encodeURIComponent(
                           c.user?.display_name || 'U'
-                        )}&background=217a67&color=fff`
+                        )}&background=4A7A8C&color=fff`
                       }
                       alt=""
                       className="w-6 h-6 rounded-full object-cover mt-0.5"
@@ -404,7 +404,7 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
                   name={`audience-${post.id}`}
                   checked={audienceChoice === 'approved'}
                   onChange={() => setAudienceChoice('approved')}
-                  className="w-4 h-4 accent-[#217a67]"
+                  className="w-4 h-4 accent-[#4A7A8C]"
                 />
               </label>
               <label className="flex items-center justify-between field rounded-xl px-4 py-3.5 cursor-pointer">
@@ -414,7 +414,7 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
                   name={`audience-${post.id}`}
                   checked={audienceChoice === 'close'}
                   onChange={() => setAudienceChoice('close')}
-                  className="w-4 h-4 accent-[#217a67]"
+                  className="w-4 h-4 accent-[#4A7A8C]"
                 />
               </label>
               <label className="flex items-center justify-between field rounded-xl px-4 py-3.5 cursor-pointer">
@@ -424,7 +424,7 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
                   name={`audience-${post.id}`}
                   checked={audienceChoice === 'disabled'}
                   onChange={() => setAudienceChoice('disabled')}
-                  className="w-4 h-4 accent-[#217a67]"
+                  className="w-4 h-4 accent-[#4A7A8C]"
                 />
               </label>
             </div>

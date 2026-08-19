@@ -1,12 +1,12 @@
 // src/pages/LoginPage.jsx
-// Sign In page matching the HTML design, fully wired to Supabase auth.
-// 🔒 Rate limiting added: 5 failed attempts locks the account for 15 minutes.
+// Sign In page featuring the official Cirvy color palette, logo, and zero-tracking security.
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useUI } from '@/contexts/UIContext'
 import { supabase } from '@/lib/supabase'
+import CirvyLogo from '@/components/CirvyLogo'
 
 export default function LoginPage() {
   const { signIn } = useAuth()
@@ -28,8 +28,7 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
 
-    // 🔒 STEP 1 — check BEFORE attempting login: is this account locked
-    // out from too many recent failed attempts?
+    // Check lockout
     const { data: isLocked } = await supabase.rpc('check_login_lock', {
       p_email: email,
     })
@@ -40,12 +39,8 @@ export default function LoginPage() {
       return
     }
 
-    // STEP 2 — attempt the actual login (unchanged from before)
     const { error: signInError } = await signIn({ email, password })
 
-    // 🔒 STEP 3 — record the result. This is what actually powers the
-    // 5-attempt lockout: on failure it increments a counter, on success
-    // it resets it back to 0.
     await supabase.rpc('record_login_attempt', {
       p_email: email,
       p_success: !signInError,
@@ -90,121 +85,134 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col max-w-md md:max-w-2xl mx-auto relative px-4">
+    <div className="min-h-screen flex flex-col max-w-md md:max-w-xl mx-auto relative px-4 py-3 selection:bg-[#8FBC94]/30">
       {/* Header controls */}
-      <header className="py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="relative w-9 h-9 rounded-xl accent-bg flex items-center justify-center shrink-0">
-            <div className="shield-ring" />
-            <i className="fa-solid fa-shield-halved text-white text-sm" />
-          </div>
-          <div className="leading-tight">
-            <p className="font-display font-bold text-[15px] text-main">{t('brand')}</p>
-            <p className="text-[10px] font-mono text-sub tracking-wide">
-              {t('shieldLabel')}
-            </p>
-          </div>
+      <header className="flex items-center justify-between py-3">
+        <div className="flex items-center gap-2">
+          <CirvyLogo variant="icon" size={32} showGlow />
+          <span className="text-xs font-mono font-bold tracking-wider text-main uppercase">
+            {t('brand')}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={toggleLang}
-            className="w-9 h-9 rounded-full field flex items-center justify-center text-xs font-mono font-semibold scale-tap cursor-pointer"
+            className="w-9 h-9 rounded-xl field flex items-center justify-center text-xs font-mono font-semibold scale-tap hover:border-[#4A7A8C] cursor-pointer"
+            title="Toggle Language"
           >
             <span>{lang === 'ar' ? 'EN' : 'AR'}</span>
           </button>
           <button
             onClick={toggleTheme}
-            className="w-9 h-9 rounded-full field flex items-center justify-center scale-tap cursor-pointer"
+            className="w-9 h-9 rounded-xl field flex items-center justify-center scale-tap hover:border-[#4A7A8C] cursor-pointer text-sub hover:text-main"
+            title="Toggle Theme"
           >
             <i className={`fa-solid ${dark ? 'fa-moon' : 'fa-sun'} text-sm`} />
           </button>
         </div>
       </header>
 
-      {/* Main Form */}
-      <main className="flex-1 flex flex-col justify-center py-6 view">
-        <div className="text-center mb-6">
-          <h1 className="font-display font-extrabold text-2xl text-main">
+      {/* Main Login Area */}
+      <main className="flex-1 flex flex-col justify-center py-4 view">
+        {/* Brand Hero */}
+        <div className="text-center mb-6 flex flex-col items-center">
+          <CirvyLogo variant="full" size={48} className="mb-3" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-mono font-semibold tracking-wide bg-[#8FBC94]/15 text-[#4A7A8C] dark:text-[#8FBC94] border border-[#8FBC94]/30 mb-3">
+            <span className="w-2 h-2 rounded-full bg-[#8FBC94] animate-ping" />
+            <span>{t('shieldLabel')}</span>
+          </div>
+          <h1 className="font-display font-extrabold text-xl md:text-2xl text-main max-w-sm leading-tight">
             {t('authHeadline')}
           </h1>
-          <p className="text-sub text-sm mt-2">{t('authSub')}</p>
+          <p className="text-sub text-xs md:text-sm mt-1.5 max-w-xs">
+            {t('authSub')}
+          </p>
         </div>
 
-        <div className="glass rounded-3xl p-5 shadow-glass">
-          {/* Tab Switcher */}
-          <div className="flex mb-6 rounded-full field p-1">
+        {/* Card */}
+        <div className="glass rounded-3xl p-6 shadow-xl border" style={{ borderColor: 'var(--card-border)' }}>
+          {/* Tabs */}
+          <div className="flex mb-6 rounded-2xl p-1 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5">
             <button
               onClick={() => {}}
-              className="flex-1 py-2 rounded-full text-sm font-semibold transition accent-bg text-white"
+              className="flex-1 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all shadow-sm text-white"
+              style={{ backgroundColor: '#4A7A8C' }}
             >
               {t('signIn')}
             </button>
             <button
               onClick={() => navigate('/signup')}
-              className="flex-1 py-2 rounded-full text-sm font-semibold transition text-sub scale-tap"
+              className="flex-1 py-2.5 rounded-xl text-xs md:text-sm font-medium transition-all text-sub hover:text-main scale-tap"
             >
               {t('signUp')}
             </button>
           </div>
 
           {error && (
-            <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/30 p-3 text-xs text-red-500 font-medium">
-              {error}
+            <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/30 p-3 text-xs text-red-500 font-medium flex items-center gap-2">
+              <i className="fa-solid fa-circle-exclamation shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
           {/* Login Form */}
-          <form id="loginForm" className="space-y-3" onSubmit={handleSubmit}>
+          <form id="loginForm" className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="text-xs font-medium text-sub">
+              <label className="block text-xs font-semibold text-main mb-1.5">
                 {t('userOrEmail')}
               </label>
-              <input
-                id="login-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="field w-full rounded-xl px-4 py-3 mt-1 text-sm"
-                placeholder={t('userOrEmailPh')}
-                autoComplete="email"
-              />
+              <div className="relative">
+                <i className="fa-regular fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-sub text-xs rtl:left-auto rtl:right-3.5" />
+                <input
+                  id="login-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="field w-full rounded-xl pl-9 pr-4 py-3 text-sm rtl:pl-4 rtl:pr-9"
+                  placeholder={t('userOrEmailPh')}
+                  autoComplete="email"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="text-xs font-medium text-sub">
-                {t('password')}
-              </label>
-              <input
-                id="login-password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="field w-full rounded-xl px-4 py-3 mt-1 text-sm"
-                placeholder="••••••••"
-                autoComplete="current-password"
-              />
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setForgotEmail(email)
-                  setShowForgot(true)
-                }}
-                className="text-xs accent-text font-semibold cursor-pointer scale-tap"
-              >
-                {t('forgotPassword')}
-              </button>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-main">
+                  {t('password')}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotEmail(email)
+                    setShowForgot(true)
+                  }}
+                  className="text-[11px] font-semibold text-[#4A7A8C] dark:text-[#8FBC94] hover:underline cursor-pointer"
+                >
+                  {t('forgotPassword')}
+                </button>
+              </div>
+              <div className="relative">
+                <i className="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-sub text-xs rtl:left-auto rtl:right-3.5" />
+                <input
+                  id="login-password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="field w-full rounded-xl pl-9 pr-4 py-3 text-sm rtl:pl-4 rtl:pr-9"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                />
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full accent-bg text-white rounded-xl py-3 font-semibold text-sm scale-tap transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full text-white rounded-xl py-3.5 font-semibold text-sm scale-tap transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer mt-2"
+              style={{ backgroundColor: '#4A7A8C' }}
             >
               {loading && <i className="fa-solid fa-circle-notch fa-spin text-sm" />}
               <span>{t('signInBtn')}</span>
@@ -213,7 +221,7 @@ export default function LoginPage() {
 
           <div className="flex items-center gap-3 my-5">
             <div className="h-px flex-1" style={{ background: 'var(--card-border)' }} />
-            <span className="text-[11px] text-sub">{t('orContinue')}</span>
+            <span className="text-[11px] font-mono text-sub uppercase tracking-wider">{t('orContinue')}</span>
             <div className="h-px flex-1" style={{ background: 'var(--card-border)' }} />
           </div>
 
@@ -221,22 +229,23 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => handleOAuth('google')}
-              className="field rounded-xl py-2.5 flex items-center justify-center gap-2 text-sm font-medium scale-tap transition cursor-pointer"
+              className="field rounded-xl py-2.5 flex items-center justify-center gap-2 text-xs md:text-sm font-medium scale-tap hover:border-[#4A7A8C] transition-all cursor-pointer"
             >
-              <i className="fa-brands fa-google text-[15px]" /> Google
+              <i className="fa-brands fa-google text-[14px]" /> Google
             </button>
             <button
               type="button"
               onClick={() => handleOAuth('facebook')}
-              className="field rounded-xl py-2.5 flex items-center justify-center gap-2 text-sm font-medium scale-tap transition cursor-pointer"
+              className="field rounded-xl py-2.5 flex items-center justify-center gap-2 text-xs md:text-sm font-medium scale-tap hover:border-[#4A7A8C] transition-all cursor-pointer"
             >
-              <i className="fa-brands fa-facebook text-[15px] text-[#1877F2]" /> Facebook
+              <i className="fa-brands fa-facebook text-[14px] text-[#1877F2]" /> Facebook
             </button>
           </div>
         </div>
 
-        <p className="text-center text-[11px] text-sub mt-5 flex items-center justify-center gap-1.5">
-          <i className="fa-solid fa-lock text-[10px]" />
+        {/* Footer */}
+        <p className="text-center text-[11px] text-sub mt-5 flex items-center justify-center gap-1.5 max-w-xs mx-auto leading-relaxed">
+          <i className="fa-solid fa-shield-halved text-[11px] text-[#8FBC94]" />
           <span>{t('authFooter')}</span>
         </p>
       </main>
@@ -245,15 +254,15 @@ export default function LoginPage() {
       {showForgot && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center px-4">
           <div
-            className="modal-backdrop absolute inset-0 bg-black/50"
+            className="modal-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowForgot(false)}
           />
-          <div className="modal-panel relative glass w-full md:w-96 rounded-3xl p-6 z-10">
-            <div className="w-11 h-11 rounded-full accent-soft-bg flex items-center justify-center mb-4">
-              <i className="fa-solid fa-key accent-text" />
+          <div className="modal-panel relative glass w-full md:w-96 rounded-3xl p-6 z-10 border shadow-2xl" style={{ borderColor: 'var(--card-border)' }}>
+            <div className="w-12 h-12 rounded-2xl bg-[#4A7A8C]/15 flex items-center justify-center mb-4 text-[#4A7A8C]">
+              <i className="fa-solid fa-key text-lg" />
             </div>
-            <h3 className="font-display font-bold text-lg mb-1">{t('resetTitle')}</h3>
-            <p className="text-xs text-sub mb-4">{t('resetSub')}</p>
+            <h3 className="font-display font-bold text-lg mb-1 text-main">{t('resetTitle')}</h3>
+            <p className="text-xs text-sub mb-4 leading-relaxed">{t('resetSub')}</p>
             <form onSubmit={handleResetPassword}>
               <input
                 id="resetEmailInput"
@@ -265,18 +274,19 @@ export default function LoginPage() {
                 placeholder="you@cirvy.app"
                 autoFocus
               />
-              <div className="flex gap-2">
+              <div className="flex gap-2.5">
                 <button
                   type="button"
                   onClick={() => setShowForgot(false)}
-                  className="flex-1 field rounded-xl py-3 font-semibold text-sm scale-tap cursor-pointer"
+                  className="flex-1 field rounded-xl py-3 font-semibold text-xs md:text-sm scale-tap cursor-pointer"
                 >
                   {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={forgotLoading}
-                  className="flex-1 accent-bg text-white rounded-xl py-3 font-semibold text-sm scale-tap transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 text-white rounded-xl py-3 font-semibold text-xs md:text-sm scale-tap transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+                  style={{ backgroundColor: '#4A7A8C' }}
                 >
                   {forgotLoading && (
                     <i className="fa-solid fa-circle-notch fa-spin text-xs" />

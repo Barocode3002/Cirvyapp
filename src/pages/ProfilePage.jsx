@@ -1,16 +1,16 @@
-// src/pages/ProfilePage.jsx
-// Profile view matching the HTML layout and Supabase backend.
-
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import FriendButton from '../components/FriendButton'
 import NavBar from '../components/NavBar'
 import { useUI } from '@/contexts/UIContext'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function ProfilePage() {
   const { userId } = useParams()
   const { t, showToast, ghostMode, setShowSettings } = useUI()
+  const { signOut } = useAuth()
+  const navigate = useNavigate()
 
   const [profile, setProfile] = useState(null)
   const [isFriend, setIsFriend] = useState(false)
@@ -141,6 +141,14 @@ export default function ProfilePage() {
 
   const isOwnProfile = currentUserId === userId
 
+  async function handleLogout() {
+    if (window.confirm(t('logoutConfirm') || 'Are you sure you want to log out?')) {
+      await signOut()
+      showToast(t('loggedOut') || 'You have been logged out securely.')
+      navigate('/login')
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col max-w-md md:max-w-2xl mx-auto relative">
       <NavBar />
@@ -152,17 +160,25 @@ export default function ProfilePage() {
             <>
               <button
                 onClick={() => setShowSettings(true)}
-                className="w-9 h-9 rounded-full field flex items-center justify-center scale-tap transition cursor-pointer"
+                className="w-9 h-9 rounded-xl field flex items-center justify-center scale-tap transition cursor-pointer hover:border-[#4A7A8C]"
                 title="Settings"
               >
-                <i className="fa-solid fa-gear text-sm" />
+                <i className="fa-solid fa-gear text-sm text-sub" />
               </button>
               <button
                 onClick={() => setShowEditBio(true)}
-                className="w-9 h-9 rounded-full field flex items-center justify-center scale-tap transition cursor-pointer"
+                className="w-9 h-9 rounded-xl field flex items-center justify-center scale-tap transition cursor-pointer hover:border-[#4A7A8C]"
                 title="Edit Profile"
               >
-                <i className="fa-solid fa-pen text-sm" />
+                <i className="fa-solid fa-pen text-sm text-sub" />
+              </button>
+              <button
+                onClick={handleLogout}
+                className="h-9 px-3 rounded-xl field flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:bg-red-500/10 hover:border-red-500/30 scale-tap transition cursor-pointer"
+                title={t('logout')}
+              >
+                <i className="fa-solid fa-arrow-right-from-bracket" />
+                <span>{t('logout')}</span>
               </button>
             </>
           )}
@@ -176,7 +192,7 @@ export default function ProfilePage() {
                 profile.avatar_url ||
                 `https://ui-avatars.com/api/?name=${encodeURIComponent(
                   profile.display_name || 'U'
-                )}&background=217a67&color=fff&size=150`
+                )}&background=4A7A8C&color=fff&size=150`
               }
               alt=""
               className="w-24 h-24 rounded-full object-cover ring-4"
