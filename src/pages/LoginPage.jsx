@@ -1,5 +1,6 @@
 // src/pages/LoginPage.jsx
 // Sign In page matching the HTML design, fully wired to Supabase auth.
+// 🔒 Rate limiting added: 5 failed attempts locks the account for 15 minutes.
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -27,7 +28,28 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
 
+    // 🔒 STEP 1 — check BEFORE attempting login: is this account locked
+    // out from too many recent failed attempts?
+    const { data: isLocked } = await supabase.rpc('check_login_lock', {
+      p_email: email,
+    })
+
+    if (isLocked) {
+      setError('Too many failed attempts. This account is temporarily locked. Please try again in 15 minutes.')
+      setLoading(false)
+      return
+    }
+
+    // STEP 2 — attempt the actual login (unchanged from before)
     const { error: signInError } = await signIn({ email, password })
+
+    // 🔒 STEP 3 — record the result. This is what actually powers the
+    // 5-attempt lockout: on failure it increments a counter, on success
+    // it resets it back to 0.
+    await supabase.rpc('record_login_attempt', {
+      p_email: email,
+      p_success: !signInError,
+    })
 
     if (signInError) {
       setError(signInError.message)
