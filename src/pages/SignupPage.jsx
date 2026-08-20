@@ -10,7 +10,7 @@ import CirvyLogo from '@/components/CirvyLogo'
 
 export default function SignupPage() {
   const { signUp } = useAuth()
-  const { t, showToast, lang, toggleLang, dark, toggleTheme } = useUI()
+  const { t, showToast, lang, dark, toggleLang, toggleTheme } = useUI()
   const navigate = useNavigate()
 
   const [form, setForm] = useState({
@@ -88,12 +88,8 @@ export default function SignupPage() {
           >
             <span>{lang === 'ar' ? 'EN' : 'AR'}</span>
           </button>
-          <button
-            onClick={toggleTheme}
-            className="w-9 h-9 rounded-xl field flex items-center justify-center scale-tap hover:border-[#4A7A8C] cursor-pointer text-sub hover:text-main"
-            title="Toggle Theme"
-          >
-            <i className={`fa-solid ${dark ? 'fa-moon' : 'fa-sun'} text-sm`} />
+          <button onClick={toggleTheme} className="w-9 h-9 rounded-xl field flex items-center justify-center text-xs font-semibold scale-tap hover:border-[#4A7A8C] cursor-pointer" title={dark ? 'Switch to light mode' : 'Switch to dark mode'} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
+            <i className={`fa-solid ${dark ? 'fa-sun' : 'fa-moon'} text-sm`} />
           </button>
         </div>
       </header>
@@ -117,7 +113,7 @@ export default function SignupPage() {
 
         <div className="glass rounded-3xl p-6 shadow-xl border" style={{ borderColor: 'var(--card-border)' }}>
           {/* Tab Switcher */}
-          <div className="flex mb-6 rounded-2xl p-1 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5">
+          <div className="flex mb-6 rounded-2xl p-1 bg-[#D1E0E3] border border-[#D1E0E3]">
             <button
               onClick={() => navigate('/login')}
               className="flex-1 py-2.5 rounded-xl text-xs md:text-sm font-medium transition-all text-sub hover:text-main scale-tap"
@@ -125,8 +121,8 @@ export default function SignupPage() {
               {t('signIn')}
             </button>
             <button
-              onClick={() => {}}
-              className="flex-1 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all shadow-sm text-white"
+              onClick={() => { }}
+              className="flex-1 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all shadow-sm text-[#F5F7F8]"
               style={{ backgroundColor: '#4A7A8C' }}
             >
               {t('signUp')}
@@ -144,7 +140,7 @@ export default function SignupPage() {
               </p>
               <button
                 onClick={() => navigate('/login')}
-                className="text-white px-6 py-3 rounded-xl text-xs md:text-sm font-semibold scale-tap mt-2 shadow-md"
+                className="text-[#F5F7F8] px-6 py-3 rounded-xl text-xs md:text-sm font-semibold scale-tap mt-2 shadow-md"
                 style={{ backgroundColor: '#4A7A8C' }}
               >
                 Back to Sign In
@@ -153,7 +149,7 @@ export default function SignupPage() {
           ) : (
             <>
               {error && (
-                <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/30 p-3 text-xs text-red-500 font-medium flex items-center gap-2">
+                <div className="mb-4 rounded-xl bg-[#D1E0E3] border border-[#4A7A8C] p-3 text-xs text-[#2E3B42] font-medium flex items-center gap-2">
                   <i className="fa-solid fa-circle-exclamation shrink-0" />
                   <span>{error}</span>
                 </div>
@@ -173,7 +169,7 @@ export default function SignupPage() {
                       value={form.displayName}
                       onChange={handleChange}
                       className="field w-full rounded-xl pl-9 pr-4 py-2.5 text-sm rtl:pl-4 rtl:pr-9"
-                      placeholder="Adham Ali"
+                      placeholder="your name"
                       autoComplete="name"
                     />
                   </div>
@@ -191,7 +187,7 @@ export default function SignupPage() {
                       value={form.username}
                       onChange={handleChange}
                       className="field w-full rounded-xl pl-9 pr-4 py-2.5 text-sm rtl:pl-4 rtl:pr-9 font-mono"
-                      placeholder="adham"
+                      placeholder="username"
                       autoComplete="username"
                     />
                   </div>
@@ -209,7 +205,7 @@ export default function SignupPage() {
                       value={form.email}
                       onChange={handleChange}
                       className="field w-full rounded-xl pl-9 pr-4 py-2.5 text-sm rtl:pl-4 rtl:pr-9"
-                      placeholder="adham@cirvy.app"
+                      placeholder="email@example.com"
                       autoComplete="email"
                     />
                   </div>
@@ -237,7 +233,7 @@ export default function SignupPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full text-white rounded-xl py-3.5 font-semibold text-sm scale-tap transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  className="w-full text-[#F5F7F8] rounded-xl py-3.5 font-semibold text-sm scale-tap transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer mt-2"
                   style={{ backgroundColor: '#4A7A8C' }}
                 >
                   {loading && <i className="fa-solid fa-circle-notch fa-spin text-sm" />}

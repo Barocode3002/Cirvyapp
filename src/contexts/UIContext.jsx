@@ -182,7 +182,7 @@ const UIContext = createContext(null)
 
 export function UIProvider({ children }) {
   const [lang, setLang] = useState('en')
-  const [dark, setDark] = useState(true)
+  const [dark, setDark] = useState(() => window.localStorage.getItem('cirvy-theme') === 'dark')
   const [ghostMode, setGhostMode] = useState(true)
   const [watermark, setWatermark] = useState(false)
   const [panicLocked, setPanicLocked] = useState(false)
@@ -193,6 +193,7 @@ export function UIProvider({ children }) {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
+    window.localStorage.setItem('cirvy-theme', dark ? 'dark' : 'light')
   }, [dark])
 
   useEffect(() => {
@@ -206,9 +207,7 @@ export function UIProvider({ children }) {
     setLang((prev) => (prev === 'en' ? 'ar' : 'en'))
   }
 
-  const toggleTheme = () => {
-    setDark((prev) => !prev)
-  }
+  const toggleTheme = () => setDark((prev) => !prev)
 
   const showToast = (msg) => {
     setToastMessage(msg)

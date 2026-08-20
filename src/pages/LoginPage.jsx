@@ -10,7 +10,7 @@ import CirvyLogo from '@/components/CirvyLogo'
 
 export default function LoginPage() {
   const { signIn } = useAuth()
-  const { t, showToast, lang, toggleLang, dark, toggleTheme } = useUI()
+  const { t, showToast, lang, dark, toggleLang, toggleTheme } = useUI()
   const navigate = useNavigate()
 
   const [email, setEmail] = useState('')
@@ -103,12 +103,8 @@ export default function LoginPage() {
           >
             <span>{lang === 'ar' ? 'EN' : 'AR'}</span>
           </button>
-          <button
-            onClick={toggleTheme}
-            className="w-9 h-9 rounded-xl field flex items-center justify-center scale-tap hover:border-[#4A7A8C] cursor-pointer text-sub hover:text-main"
-            title="Toggle Theme"
-          >
-            <i className={`fa-solid ${dark ? 'fa-moon' : 'fa-sun'} text-sm`} />
+          <button onClick={toggleTheme} className="w-9 h-9 rounded-xl field flex items-center justify-center text-xs font-semibold scale-tap hover:border-[#4A7A8C] cursor-pointer" title={dark ? 'Switch to light mode' : 'Switch to dark mode'} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
+            <i className={`fa-solid ${dark ? 'fa-sun' : 'fa-moon'} text-sm`} />
           </button>
         </div>
       </header>
@@ -133,10 +129,10 @@ export default function LoginPage() {
         {/* Card */}
         <div className="glass rounded-3xl p-6 shadow-xl border" style={{ borderColor: 'var(--card-border)' }}>
           {/* Tabs */}
-          <div className="flex mb-6 rounded-2xl p-1 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5">
+            <div className="flex mb-6 rounded-2xl p-1 bg-[#D1E0E3] border border-[#D1E0E3]">
             <button
               onClick={() => {}}
-              className="flex-1 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all shadow-sm text-white"
+              className="flex-1 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all shadow-sm text-[#F5F7F8]"
               style={{ backgroundColor: '#4A7A8C' }}
             >
               {t('signIn')}
@@ -150,7 +146,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/30 p-3 text-xs text-red-500 font-medium flex items-center gap-2">
+            <div className="mb-4 rounded-xl bg-[#D1E0E3] border border-[#4A7A8C] p-3 text-xs text-[#2E3B42] font-medium flex items-center gap-2">
               <i className="fa-solid fa-circle-exclamation shrink-0" />
               <span>{error}</span>
             </div>
@@ -211,7 +207,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full text-white rounded-xl py-3.5 font-semibold text-sm scale-tap transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer mt-2"
+              className="w-full text-[#F5F7F8] rounded-xl py-3.5 font-semibold text-sm scale-tap transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer mt-2"
               style={{ backgroundColor: '#4A7A8C' }}
             >
               {loading && <i className="fa-solid fa-circle-notch fa-spin text-sm" />}
@@ -254,7 +250,7 @@ export default function LoginPage() {
       {showForgot && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center px-4">
           <div
-            className="modal-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="modal-backdrop absolute inset-0 bg-[#2E3B42]/40 backdrop-blur-sm"
             onClick={() => setShowForgot(false)}
           />
           <div className="modal-panel relative glass w-full md:w-96 rounded-3xl p-6 z-10 border shadow-2xl" style={{ borderColor: 'var(--card-border)' }}>
@@ -285,7 +281,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={forgotLoading}
-                  className="flex-1 text-white rounded-xl py-3 font-semibold text-xs md:text-sm scale-tap transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 text-[#F5F7F8] rounded-xl py-3 font-semibold text-xs md:text-sm scale-tap transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
                   style={{ backgroundColor: '#4A7A8C' }}
                 >
                   {forgotLoading && (

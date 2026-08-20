@@ -171,7 +171,7 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
                 <span>{author.display_name || 'User'}</span>
                 <i
                   className="fa-solid fa-badge-check text-[11px]"
-                  style={{ color: 'var(--gilt-500, #c9a227)' }}
+                  style={{ color: '#8FBC94' }}
                 />
               </Link>
               <p className="text-[11px] text-sub">
@@ -207,7 +207,7 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
               className="flex items-center gap-1.5 text-sm scale-tap transition cursor-pointer"
             >
               <i
-                className={`${liked ? 'fa-solid text-[#e0245e]' : 'fa-regular'} fa-heart`}
+                className={`${liked ? 'fa-solid text-[#4A7A8C]' : 'fa-regular'} fa-heart`}
               />
               <span className="like-count font-medium">{formatNum(likeCount)}</span>
             </button>
@@ -258,7 +258,7 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
                 </button>
                 <button
                   onClick={handleEdit}
-                  className="accent-bg text-white px-3 py-1.5 rounded-lg text-xs font-semibold"
+                  className="accent-bg text-[#F5F7F8] px-3 py-1.5 rounded-lg text-xs font-semibold"
                 >
                   {t('save')}
                 </button>
@@ -318,7 +318,7 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
               <button
                 type="submit"
                 disabled={!commentText.trim() || submittingComment}
-                className="accent-bg text-white px-3 py-2 rounded-xl text-xs font-semibold scale-tap disabled:opacity-50 cursor-pointer"
+                className="accent-bg text-[#F5F7F8] px-3 py-2 rounded-xl text-xs font-semibold scale-tap disabled:opacity-50 cursor-pointer"
               >
                 {submittingComment ? '…' : 'Send'}
               </button>
@@ -368,7 +368,7 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
             {isOwner && (
               <button
                 onClick={handleDelete}
-                className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-red-500 scale-tap transition cursor-pointer"
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-[#4A7A8C] scale-tap transition cursor-pointer"
               >
                 <i className="fa-solid fa-trash w-5" />
                 <span>{t('menuDelete')}</span>
@@ -433,7 +433,7 @@ export default function PostCard({ post, currentUserId, onPostUpdated }) {
                 setShowAudienceModal(false)
                 showToast(t('audienceSaved'))
               }}
-              className="w-full accent-bg text-white rounded-xl py-3 font-semibold text-sm mt-5 scale-tap transition cursor-pointer"
+              className="w-full accent-bg text-[#F5F7F8] rounded-xl py-3 font-semibold text-sm mt-5 scale-tap transition cursor-pointer"
             >
               {t('save')}
             </button>

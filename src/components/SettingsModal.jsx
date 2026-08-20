@@ -114,11 +114,11 @@ export default function SettingsModal() {
             </p>
             <button
               onClick={engagePanic}
-              className="w-full flex items-center gap-3 py-3 rounded-2xl bg-red-500/10 border border-red-500/30 px-4 scale-tap transition cursor-pointer hover:bg-red-500/15"
+              className="w-full flex items-center gap-3 py-3 rounded-2xl bg-[#D1E0E3] border border-[#4A7A8C] px-4 scale-tap transition cursor-pointer hover:bg-[#8FBC94]"
             >
-              <i className="fa-solid fa-triangle-exclamation text-red-500 w-5" />
+              <i className="fa-solid fa-triangle-exclamation text-[#4A7A8C] w-5" />
               <div className="text-left rtl:text-right">
-                <p className="text-sm font-semibold text-red-500">{t('panicLock')}</p>
+                <p className="text-sm font-semibold text-[#2E3B42]">{t('panicLock')}</p>
                 <p className="text-xs text-sub">{t('panicDesc')}</p>
               </div>
             </button>
@@ -128,7 +128,7 @@ export default function SettingsModal() {
             <div className="pt-2 border-t" style={{ borderColor: 'var(--card-border)' }}>
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl field text-red-500 hover:bg-red-500/10 hover:border-red-500/30 font-semibold text-xs md:text-sm scale-tap transition cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl field text-[#4A7A8C] hover:bg-[#D1E0E3] hover:border-[#4A7A8C] font-semibold text-xs md:text-sm scale-tap transition cursor-pointer"
               >
                 <i className="fa-solid fa-arrow-right-from-bracket" />
                 <span>{t('logout') || 'Log Out'}</span>

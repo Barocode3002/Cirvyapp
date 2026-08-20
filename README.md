@@ -1,3 +1,10 @@
+# Cirvy
+
+## Post image uploads
+
+The post composer accepts images from the device or camera (`image/*`, camera capture on supported mobile browsers). It uploads files to a Supabase Storage bucket named `post-media` and stores the resulting public URL in `posts.image_url`.
+
+Create a public `post-media` bucket in Supabase Storage before testing image posts. Storage policies must allow authenticated users to insert files under their own user ID prefix (`<auth.uid()>/...`) and allow reads for the friends-only feed. The client intentionally limits files to images no larger than 6 MB.
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

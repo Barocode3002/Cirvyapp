@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import NavBar from '../components/NavBar'
+import AppShell from '@/components/AppShell'
 import { useUI } from '@/contexts/UIContext'
 
 export default function FriendRequests() {
@@ -68,10 +68,8 @@ export default function FriendRequests() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col max-w-md md:max-w-2xl mx-auto relative">
-      <NavBar />
-
-      <main className="flex-1 overflow-y-auto pb-28 px-4 pt-4 view">
+    <AppShell>
+      <main className="flex-1 overflow-y-auto px-4 py-8 view">
         <h2 className="font-display font-bold text-xl mb-4">{t('friendsTitle')}</h2>
 
         {/* Tab Headers with tab-underline */}
@@ -98,7 +96,7 @@ export default function FriendRequests() {
           >
             <span>{t('requestsTab')}</span>
             {requests.length > 0 && (
-              <span className="ms-1.5 px-1.5 py-0.5 rounded-full text-[10px] accent-bg text-white font-mono">
+              <span className="ms-1.5 px-1.5 py-0.5 rounded-full accent-bg text-[#F5F7F8] font-mono">
                 {requests.length}
               </span>
             )}
@@ -193,7 +191,7 @@ export default function FriendRequests() {
                         <button
                           onClick={() => accept(r.id)}
                           disabled={actioningId === r.id}
-                          className="accent-bg text-white text-xs font-semibold px-3.5 py-2 rounded-full scale-tap transition disabled:opacity-50 cursor-pointer"
+                          className="accent-bg text-[#F5F7F8] text-xs font-semibold px-3.5 py-2 rounded-full scale-tap transition disabled:opacity-50 cursor-pointer"
                         >
                           {t('accept')}
                         </button>
@@ -213,6 +211,6 @@ export default function FriendRequests() {
           </>
         )}
       </main>
-    </div>
+    </AppShell>
   )
 }

@@ -69,7 +69,7 @@ export default function FriendButton({ profileId, currentUserId }) {
     return (
       <button
         onClick={sendRequest}
-        className="accent-bg text-white text-xs font-semibold px-4 py-2 rounded-full scale-tap transition cursor-pointer flex items-center gap-1.5"
+        className="accent-bg text-[#F5F7F8] text-xs font-semibold px-4 py-2 rounded-full scale-tap transition cursor-pointer flex items-center gap-1.5"
       >
         <i className="fa-solid fa-user-plus text-[10px]" />
         <span>Add Friend</span>
@@ -93,7 +93,7 @@ export default function FriendButton({ profileId, currentUserId }) {
     return (
       <button
         onClick={acceptRequest}
-        className="accent-bg text-white text-xs font-semibold px-4 py-2 rounded-full scale-tap transition cursor-pointer flex items-center gap-1.5"
+        className="accent-bg text-[#F5F7F8] text-xs font-semibold px-4 py-2 rounded-full scale-tap transition cursor-pointer flex items-center gap-1.5"
       >
         <i className="fa-solid fa-check text-[10px]" />
         <span>Accept Request</span>

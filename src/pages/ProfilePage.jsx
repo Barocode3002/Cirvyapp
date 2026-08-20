@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import FriendButton from '../components/FriendButton'
-import NavBar from '../components/NavBar'
+import AppShell from '@/components/AppShell'
 import { useUI } from '@/contexts/UIContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { Camera, Image, X } from 'lucide-react'
 
 export default function ProfilePage() {
   const { userId } = useParams()
@@ -24,6 +25,19 @@ export default function ProfilePage() {
   const [showEditBio, setShowEditBio] = useState(false)
   const [bioInput, setBioInput] = useState('')
   const [savingBio, setSavingBio] = useState(false)
+  const [avatarFile, setAvatarFile] = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState('')
+  const [avatarError, setAvatarError] = useState('')
+
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarPreview('')
+      return undefined
+    }
+    const objectUrl = URL.createObjectURL(avatarFile)
+    setAvatarPreview(objectUrl)
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [avatarFile])
 
   useEffect(() => {
     loadProfile()
@@ -98,14 +112,56 @@ export default function ProfilePage() {
   async function handleSaveBio(e) {
     e.preventDefault()
     setSavingBio(true)
-    await supabase
-      .from('profiles')
-      .update({ bio: bioInput.trim() })
-      .eq('id', currentUserId)
-    setProfile((prev) => ({ ...prev, bio: bioInput.trim() }))
-    setSavingBio(false)
-    setShowEditBio(false)
-    showToast('Profile updated')
+    try {
+      let avatarUrl = profile.avatar_url || null
+      if (avatarFile) {
+        const extension = avatarFile.name.split('.').pop()?.toLowerCase() || 'jpg'
+        const path = `${currentUserId}/${crypto.randomUUID()}.${extension}`
+        const { error: uploadError } = await supabase.storage.from('profile-media').upload(path, avatarFile, {
+          cacheControl: '3600',
+          contentType: avatarFile.type,
+          upsert: false,
+        })
+        if (uploadError) {
+          avatarUrl = await fileToDataUrl(avatarFile)
+        } else {
+          avatarUrl = supabase.storage.from('profile-media').getPublicUrl(path).data.publicUrl
+        }
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ bio: bioInput.trim(), avatar_url: avatarUrl })
+        .eq('id', currentUserId)
+      if (error) throw error
+
+      setProfile((prev) => ({ ...prev, bio: bioInput.trim(), avatar_url: avatarUrl }))
+      setAvatarFile(null)
+      setShowEditBio(false)
+      showToast('Profile updated')
+    } catch {
+      setAvatarError('Your profile could not be updated. Try again.')
+    } finally {
+      setSavingBio(false)
+    }
+  }
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
+  function handleAvatarChange(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) return setAvatarError('Choose an image file.')
+    if (file.size > 4 * 1024 * 1024) return setAvatarError('Profile pictures must be smaller than 4 MB.')
+    setAvatarError('')
+    setAvatarFile(file)
   }
 
   function formatCount(n) {
@@ -115,19 +171,17 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col max-w-md md:max-w-2xl mx-auto relative">
-        <NavBar />
+      <AppShell>
         <div className="flex-1 flex items-center justify-center">
           <i className="fa-solid fa-circle-notch fa-spin text-2xl accent-text" />
         </div>
-      </div>
+      </AppShell>
     )
   }
 
   if (!profile) {
     return (
-      <div className="min-h-screen flex flex-col max-w-md md:max-w-2xl mx-auto relative">
-        <NavBar />
+      <AppShell>
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="glass rounded-3xl p-8 text-center max-w-xs w-full">
             <p className="text-3xl mb-2">🔍</p>
@@ -135,7 +189,7 @@ export default function ProfilePage() {
             <p className="text-xs text-sub">This user profile does not exist.</p>
           </div>
         </div>
-      </div>
+      </AppShell>
     )
   }
 
@@ -150,10 +204,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col max-w-md md:max-w-2xl mx-auto relative">
-      <NavBar />
-
-      <main className="flex-1 overflow-y-auto pb-28 px-4 pt-4 view">
+    <AppShell>
+      <main className="flex-1 overflow-y-auto px-4 py-8 view">
         {/* Top action buttons */}
         <div className="flex justify-end gap-2 mb-2">
           {isOwnProfile && (
@@ -174,7 +226,7 @@ export default function ProfilePage() {
               </button>
               <button
                 onClick={handleLogout}
-                className="h-9 px-3 rounded-xl field flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:bg-red-500/10 hover:border-red-500/30 scale-tap transition cursor-pointer"
+                className="h-9 px-3 rounded-xl field flex items-center gap-1.5 text-xs font-semibold text-[#4A7A8C] hover:bg-[#D1E0E3] hover:border-[#4A7A8C] scale-tap transition cursor-pointer"
                 title={t('logout')}
               >
                 <i className="fa-solid fa-arrow-right-from-bracket" />
@@ -201,7 +253,7 @@ export default function ProfilePage() {
             <span
               className="absolute bottom-1 right-1 w-4 h-4 rounded-full ring-2"
               style={{
-                background: ghostMode ? '#34d399' : '#9aa2ad',
+                background: '#8FBC94',
                 ringColor: 'var(--bg)',
               }}
             />
@@ -282,8 +334,8 @@ export default function ProfilePage() {
                       {p.content}
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <span className="text-white text-xs font-semibold">
+                  <div className="absolute inset-0 bg-[#2E3B42]/0 group-hover:bg-[#2E3B42]/25 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <span className="text-[#F5F7F8] text-xs font-semibold">
                       <i className="fa-solid fa-heart mr-1" />
                     </span>
                   </div>
@@ -298,7 +350,7 @@ export default function ProfilePage() {
       {showEditBio && (
         <div className="fixed inset-0 z-[90] flex items-end md:items-center justify-center">
           <div
-            className="modal-backdrop absolute inset-0 bg-black/50"
+            className="modal-backdrop absolute inset-0 bg-[#2E3B42]/40"
             onClick={() => setShowEditBio(false)}
           />
           <div className="modal-panel relative glass w-full md:w-96 rounded-t-3xl md:rounded-3xl p-5 z-10">
@@ -313,6 +365,27 @@ export default function ProfilePage() {
             </div>
 
             <form onSubmit={handleSaveBio} className="space-y-3">
+              <div>
+                <span className="mb-2 block text-xs font-semibold text-[#2E3B42]">Profile picture</span>
+                <div className="flex items-center gap-3 rounded-xl bg-[#D1E0E3]/55 p-3">
+                  <img
+                    src={avatarPreview || profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.display_name || 'U')}&background=4A7A8C&color=F5F7F8`}
+                    alt="Profile preview"
+                    className="h-14 w-14 rounded-full object-cover"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg bg-[#4A7A8C] px-3 text-xs font-bold text-[#F5F7F8] hover:bg-[#2E3B42]">
+                      <Image size={14} />
+                      <span>{avatarFile ? 'Replace picture' : 'Choose picture'}</span>
+                      <input type="file" accept="image/*" capture="environment" onChange={handleAvatarChange} className="sr-only" />
+                    </label>
+                    <p className="mt-1 text-[10px] text-[#4A7A8C]">Device or camera, up to 4 MB</p>
+                  </div>
+                  {avatarFile && <button type="button" onClick={() => setAvatarFile(null)} className="rounded-lg p-2 text-[#4A7A8C] hover:bg-[#D1E0E3]" aria-label="Remove new profile picture"><X size={15} /></button>}
+                  <Camera size={16} className="text-[#4A7A8C]" />
+                </div>
+                {avatarError && <p role="alert" className="mt-2 rounded-lg bg-[#D1E0E3] px-3 py-2 text-xs font-semibold text-[#2E3B42]">{avatarError}</p>}
+              </div>
               <div>
                 <textarea
                   value={bioInput}
@@ -335,7 +408,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={savingBio}
-                  className="accent-bg text-white px-5 py-2 rounded-xl text-xs font-semibold scale-tap disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                  className="accent-bg text-[#F5F7F8] px-5 py-2 rounded-xl text-xs font-semibold scale-tap disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
                   {savingBio && <i className="fa-solid fa-circle-notch fa-spin mr-1" />}
                   <span>{t('save')}</span>
@@ -345,6 +418,6 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-    </div>
+    </AppShell>
   )
 }

@@ -17,12 +17,12 @@
   --color-subtle-accent: #D1E0E3;   /* "Morning Mist" */
 
   --bg: #F5F7F8;
-  --bg-alt: #ffffff;
+  --bg-alt: #F5F7F8;
   --grid-line: rgba(74, 122, 140, 0.04);
   --card-bg: rgba(255, 255, 255, 0.88);
   --card-border: #D1E0E3;
   --text-main: #2E3B42;
-  --text-sub: #677A85;
+  --text-sub: #4A7A8C;
   --accent: #4A7A8C;
   --accent-soft: rgba(74, 122, 140, 0.12);
   --accent-green: #8FBC94;
@@ -83,7 +83,7 @@
   --muted-foreground: oklch(0.50 0.02 220);
   --accent: oklch(0.92 0.01 200);
   --accent-foreground: oklch(0.32 0.02 225);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: #4A7A8C;
   --input: #D1E0E3;
   --ring: #4A7A8C;
   --radius: 1rem;
@@ -91,37 +91,33 @@
   color-scheme: light dark;
 }
 
-html.dark, .dark {
-  --bg: #12181C;
-  --bg-alt: #182228;
-  --grid-line: rgba(209, 224, 227, 0.035);
-  --card-bg: rgba(24, 34, 40, 0.78);
-  --card-border: rgba(209, 224, 227, 0.12);
+html.dark {
+  --bg: #2E3B42;
+  --bg-alt: #2E3B42;
+  --grid-line: rgba(209, 224, 227, 0.08);
+  --card-bg: rgba(46, 59, 66, 0.94);
+  --card-border: #4A7A8C;
   --text-main: #F5F7F8;
-  --text-sub: #90A4AE;
-  --accent: #5C95A8;
-  --accent-soft: rgba(92, 149, 168, 0.18);
+  --text-sub: #D1E0E3;
+  --accent: #4A7A8C;
+  --accent-soft: rgba(74, 122, 140, 0.35);
   --accent-green: #8FBC94;
-  --accent-green-soft: rgba(143, 188, 148, 0.2);
-  --subtle-accent: rgba(209, 224, 227, 0.14);
-
-  --background: oklch(0.15 0.01 220);
-  --foreground: oklch(0.97 0.005 200);
-  --card: oklch(0.19 0.01 220);
-  --card-foreground: oklch(0.97 0.005 200);
-  --popover: oklch(0.19 0.01 220);
-  --popover-foreground: oklch(0.97 0.005 200);
-  --primary: oklch(0.66 0.07 215);
-  --primary-foreground: oklch(0.13 0.01 220);
-  --secondary: oklch(0.23 0.01 220);
-  --secondary-foreground: oklch(0.97 0.005 200);
-  --muted: oklch(0.23 0.01 220);
-  --muted-foreground: oklch(0.68 0.01 220);
-  --accent: oklch(0.23 0.01 220);
-  --accent-foreground: oklch(0.97 0.005 200);
-  --destructive: oklch(0.704 0.191 22.216);
-  --input: rgba(209, 224, 227, 0.14);
-  --ring: #5C95A8;
+  --accent-green-soft: rgba(143, 188, 148, 0.25);
+  --subtle-accent: #4A7A8C;
+  --background: #2E3B42;
+  --foreground: #F5F7F8;
+  --card: #2E3B42;
+  --card-foreground: #F5F7F8;
+  --popover: #2E3B42;
+  --popover-foreground: #F5F7F8;
+  --primary: #4A7A8C;
+  --primary-foreground: #F5F7F8;
+  --secondary: #4A7A8C;
+  --secondary-foreground: #F5F7F8;
+  --muted: #4A7A8C;
+  --muted-foreground: #D1E0E3;
+  --input: #4A7A8C;
+  --ring: #8FBC94;
 }
 
 html[dir="rtl"] body {
@@ -141,7 +137,7 @@ body {
   background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
   background-attachment: fixed;
   transition: background-color .35s ease, color .35s ease;
-  font-family: 'Inter', 'Cairo', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Geist Variable', 'Cairo', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -341,8 +337,11 @@ html:not(.dark) .watermark-tile {
 }
 
 .post-img {
-  aspect-ratio: 4/5;
-  object-fit: cover;
+  display: block;
+  width: 100%;
+  max-height: 32rem;
+  object-fit: contain;
+  background: #D1E0E3;
 }
 
 .view {

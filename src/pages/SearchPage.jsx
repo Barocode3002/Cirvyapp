@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import NavBar from '@/components/NavBar'
+import AppShell from '@/components/AppShell'
 import { useUI } from '@/contexts/UIContext'
 
 export default function SearchPage() {
@@ -14,15 +14,20 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false)
 
   async function fetchUsers(search) {
+    const term = search.trim()
+    if (!term) {
+      setResults([])
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     let req = supabase
       .from('profiles')
       .select('id, username, display_name, avatar_url')
       .limit(20)
 
-    if (search.trim()) {
-      req = req.or(`username.ilike.%${search.trim()}%,display_name.ilike.%${search.trim()}%`)
-    }
+    req = req.or(`username.ilike.%${term}%,display_name.ilike.%${term}%`)
 
     const { data } = await req
     setResults(data || [])
@@ -34,10 +39,8 @@ export default function SearchPage() {
   }, [query])
 
   return (
-    <div className="min-h-screen flex flex-col max-w-md md:max-w-2xl mx-auto relative">
-      <NavBar />
-
-      <main className="flex-1 overflow-y-auto pb-28 px-4 pt-4 view">
+    <AppShell>
+      <main className="flex-1 overflow-y-auto px-4 py-8 view">
         <h2 className="font-display font-bold text-xl mb-4">{t('searchTitle')}</h2>
 
         <div className="relative mb-4">
@@ -55,21 +58,15 @@ export default function SearchPage() {
           />
         </div>
 
-        <div
-          className="glass rounded-2xl p-4 flex gap-3 items-start mb-5 accent-border"
-          style={{ borderWidth: '1px' }}
-        >
-          <i className="fa-solid fa-shield-heart accent-text mt-0.5" />
-          <p className="text-xs leading-relaxed">{t('privacyBanner')}</p>
-        </div>
-
         <div className="space-y-2">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <i className="fa-solid fa-circle-notch fa-spin text-lg accent-text" />
             </div>
           ) : results.length === 0 ? (
-            <p className="text-center text-sub text-sm py-10">{t('noResults')}</p>
+            <p className="text-center text-sub text-sm py-10">
+              {query.trim() ? t('noResults') : 'Search by name or username.'}
+            </p>
           ) : (
             results.map((u) => (
               <div
@@ -91,7 +88,7 @@ export default function SearchPage() {
                     {u.display_name}
                     <i
                       className="fa-solid fa-badge-check text-[11px]"
-                      style={{ color: 'var(--gilt-500, #c9a227)' }}
+                      style={{ color: '#8FBC94' }}
                     />
                   </p>
                   <p className="text-xs text-sub truncate">@{u.username}</p>
@@ -107,6 +104,6 @@ export default function SearchPage() {
           )}
         </div>
       </main>
-    </div>
+    </AppShell>
   )
 }
